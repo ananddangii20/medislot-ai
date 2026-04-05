@@ -6,10 +6,22 @@ import { Navbar } from "@/components/Navbar";
 import { PageTransition } from "@/components/PageTransition";
 import { toast } from "sonner";
 
-const appointments = [
-  { id: 1, patient: "Alex Johnson", age: 34, date: "Apr 10, 2026", time: "10:00 AM", reason: "Chest pain", status: "pending" as const },
-  { id: 2, patient: "Maria Garcia", age: 28, date: "Apr 10, 2026", time: "11:30 AM", reason: "Follow-up", status: "pending" as const },
-  { id: 3, patient: "David Lee", age: 45, date: "Apr 10, 2026", time: "2:00 PM", reason: "Annual checkup", status: "accepted" as const },
+type Status = "pending" | "accepted" | "rejected";
+
+interface Appointment {
+  id: number;
+  patient: string;
+  age: number;
+  date: string;
+  time: string;
+  reason: string;
+  status: Status;
+}
+
+const appointments: Appointment[] = [
+  { id: 1, patient: "Alex Johnson", age: 34, date: "Apr 10, 2026", time: "10:00 AM", reason: "Chest pain", status: "pending" },
+  { id: 2, patient: "Maria Garcia", age: 28, date: "Apr 10, 2026", time: "11:30 AM", reason: "Follow-up", status: "pending" },
+  { id: 3, patient: "David Lee", age: 45, date: "Apr 10, 2026", time: "2:00 PM", reason: "Annual checkup", status: "accepted" },
 ];
 
 type Status = "pending" | "accepted" | "rejected";
