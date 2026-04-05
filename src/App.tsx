@@ -3,8 +3,16 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
-import NotFound from "./pages/NotFound.tsx";
+import Splash from "./pages/Splash";
+import Home from "./pages/Home";
+import Doctors from "./pages/Doctors";
+import DoctorProfile from "./pages/DoctorProfile";
+import Booking from "./pages/Booking";
+import Login from "./pages/Login";
+import PatientDashboard from "./pages/PatientDashboard";
+import DoctorDashboard from "./pages/DoctorDashboard";
+import SymptomChecker from "./pages/SymptomChecker";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -15,8 +23,15 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/" element={<Splash />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/doctors" element={<Doctors />} />
+          <Route path="/doctor/:id" element={<DoctorProfile />} />
+          <Route path="/booking/:id" element={<Booking />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/patient-dashboard" element={<PatientDashboard />} />
+          <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
+          <Route path="/symptom-checker" element={<SymptomChecker />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

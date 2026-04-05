@@ -24,8 +24,6 @@ const appointments: Appointment[] = [
   { id: 3, patient: "David Lee", age: 45, date: "Apr 10, 2026", time: "2:00 PM", reason: "Annual checkup", status: "accepted" },
 ];
 
-type Status = "pending" | "accepted" | "rejected";
-
 export default function DoctorDashboard() {
   const [items, setItems] = useState(appointments);
 
