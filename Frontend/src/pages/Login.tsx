@@ -1,109 +1,228 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Heart, Mail, Lock, User, Eye, EyeOff } from "lucide-react";
+import { Heart, Mail, Lock, User, Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageTransition } from "@/components/PageTransition";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { googleAuthUser, loginUser, signupUser, verifyEmailOtp } from "@/api";
+import { auth, googleProvider } from "@/firebase";
+import { signInWithPopup } from "firebase/auth";
 
 export default function Login() {
-  const [isLogin, setIsLogin] = useState(true);
-  const [showPass, setShowPass] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [step, setStep] = useState<"auth" | "otp">("auth");
+  const [showPass, setShowPass] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [pendingVerificationEmail, setPendingVerificationEmail] = useState("");
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
+
+  // ✅ FIXED validation (button issue solved)
+  const canSubmit = useMemo(() => {
+    if (isLoading) return false;
+
+    if (step === "otp") {
+      return otp.trim().length >= 4;
+    }
+
+    if (isLogin) {
+      return email.trim() !== "" && password.trim() !== "";
+    }
+
+    return name.trim() !== "" && email.trim() !== "" && password.trim().length >= 6;
+  }, [step, otp, isLogin, email, password, name, isLoading]);
+
+  const resetAuthForm = () => {
+    setName("");
+    setEmail("");
+    setPassword("");
+    setShowPass(false);
+  };
+
+  const switchAuthMode = () => {
+    setIsLogin((prev) => !prev);
+    setStep("auth");
+    setOtp("");
+    setPendingVerificationEmail("");
+    resetAuthForm();
+  };
+
+  // ✅ SIMPLE email validation (no blocking)
+  const validateEmail = (value: string) => {
+    return value.includes("@");
+  };
+
+  // ✅ FIREBASE GOOGLE LOGIN (FINAL)
+  const handleGoogleLogin = async () => {
+    try {
+      setIsLoading(true);
+
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      if (!user.email) {
+        toast.error("Google email not found");
+        return;
+      }
+
+      const backendResponse = await googleAuthUser({
+        name: user.displayName || "Google User",
+        email: user.email,
+        uid: user.uid,
+      });
+
+      localStorage.setItem("medislot_token", backendResponse.access_token);
+      window.dispatchEvent(new Event("auth-changed"));
+
+      toast.success("Google login successful 🚀");
+      navigate("/home");
+    } catch (error: any) {
+      toast.error(error?.message || "Google login failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success(isLogin ? "Welcome back!" : "Account created successfully!");
+
+    if (!canSubmit) return;
+
+    if (step === "otp") {
+      try {
+        setIsLoading(true);
+
+        await verifyEmailOtp({
+          email: pendingVerificationEmail,
+          otp: otp.trim(),
+        });
+
+        toast.success("Email verified ✅");
+        setStep("auth");
+        setIsLogin(true);
+        setEmail(pendingVerificationEmail);
+        setOtp("");
+        setPendingVerificationEmail("");
+      } catch (error: any) {
+        toast.error(error?.message || "OTP failed");
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      toast.error("Enter valid email");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      if (isLogin) {
+        const res = await loginUser({ email, password });
+
+        localStorage.setItem("medislot_token", res.access_token);
+        window.dispatchEvent(new Event("auth-changed"));
+        toast.success("Login successful 🎉");
+        navigate("/home");
+      } else {
+        await signupUser({ name, email, password });
+
+        toast.success("Signup done → verify OTP");
+        setPendingVerificationEmail(email);
+        setStep("otp");
+      }
+    } catch (error: any) {
+      toast.error(error?.message || "Auth failed");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <PageTransition>
-      <div className="min-h-screen flex">
-        {/* Left */}
+      <div className="min-h-screen flex bg-gradient-to-br from-orange-50 via-rose-50 to-amber-100">
+
+        {/* LEFT */}
         <div className="hidden lg:flex lg:w-1/2 bg-hero-gradient items-center justify-center p-12">
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-center space-y-6 max-w-md"
-          >
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-primary-foreground/20 flex items-center justify-center">
-              <Heart className="w-8 h-8 text-primary-foreground" fill="currentColor" />
-            </div>
-            <h2 className="font-heading font-bold text-3xl text-primary-foreground">MediSlot AI</h2>
-            <p className="text-primary-foreground/80 leading-relaxed">
-              Your health journey starts here. Book appointments, check symptoms, and connect with top doctors.
-            </p>
-          </motion.div>
+          <div className="text-center space-y-6">
+            <Heart className="w-10 h-10 text-white mx-auto" fill="white" />
+            <h2 className="text-3xl text-white font-bold">MediSlot AI</h2>
+            <p className="text-white">Your Health, Our Priority</p>
+          </div>
         </div>
 
-        {/* Right */}
+        {/* RIGHT */}
         <div className="flex-1 flex items-center justify-center p-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-sm space-y-6"
-          >
-            <div className="lg:hidden flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-hero-gradient flex items-center justify-center">
-                <Heart className="w-4 h-4 text-primary-foreground" fill="currentColor" />
-              </div>
-              <span className="font-heading font-bold">MediSlot AI</span>
-            </div>
+          <div className="w-full max-w-md space-y-6 bg-white p-7 rounded-2xl shadow-xl">
 
-            <div>
-              <h1 className="font-heading font-bold text-2xl">
-                {isLogin ? "Welcome back" : "Create account"}
-              </h1>
-              <p className="text-muted-foreground text-sm mt-1">
-                {isLogin ? "Enter your credentials to continue" : "Start your health journey today"}
-              </p>
-            </div>
+            <h1 className="text-2xl font-bold text-center">
+              {step === "otp" ? "Verify OTP" : isLogin ? "Welcome back" : "Create account"}
+            </h1>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && (
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+
+              {step === "otp" ? (
+                <input
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="Enter OTP"
+                  className="w-full p-3 border rounded-xl"
+                />
+              ) : (
+                <>
+                  {!isLogin && (
+                    <input
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Full Name"
+                      className="w-full p-3 border rounded-xl"
+                    />
+                  )}
+
                   <input
-                    type="text"
-                    placeholder="Full Name"
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email"
+                    className="w-full p-3 border rounded-xl"
                   />
-                </div>
+
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password"
+                    className="w-full p-3 border rounded-xl"
+                  />
+                </>
               )}
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  type="email"
-                  placeholder="Email"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                />
-              </div>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  type={showPass ? "text" : "password"}
-                  placeholder="Password"
-                  className="w-full pl-10 pr-10 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                />
-                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              <Button type="submit" className="w-full rounded-xl" size="lg">
-                {isLogin ? "Log in" : "Create Account"}
+
+              <Button disabled={!canSubmit} className="w-full">
+                {isLoading ? "Loading..." : step === "otp" ? "Verify OTP" : isLogin ? "Login" : "Signup"}
               </Button>
+
+              {/* GOOGLE BUTTON */}
+              {step !== "otp" && (
+                <Button type="button" variant="outline" className="w-full" onClick={handleGoogleLogin}>
+                  Continue with Google
+                </Button>
+              )}
             </form>
 
-            <p className="text-center text-sm text-muted-foreground">
-              {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
-              <button onClick={() => setIsLogin(!isLogin)} className="text-primary font-medium hover:underline">
-                {isLogin ? "Sign up" : "Log in"}
+            <p className="text-center text-sm">
+              {isLogin ? "No account?" : "Already have account?"}
+              <button onClick={switchAuthMode} className="ml-2 text-blue-500">
+                {isLogin ? "Signup" : "Login"}
               </button>
             </p>
-            <Link to="/home" className="block text-center text-xs text-muted-foreground hover:text-foreground transition-colors">
-              ← Back to Home
-            </Link>
-          </motion.div>
+          </div>
         </div>
       </div>
     </PageTransition>

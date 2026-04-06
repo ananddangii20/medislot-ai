@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Heart } from "lucide-react";
+import { Menu, X, Heart, LogOut, UserCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { isAuthenticated, logout } from "@/utils/auth";
 
 const navLinks = [
   { label: "Home", path: "/" },
@@ -14,6 +15,7 @@ const navLinks = [
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(isAuthenticated());
   const location = useLocation();
 
   useEffect(() => {
@@ -23,6 +25,17 @@ export function Navbar() {
   }, []);
 
   useEffect(() => setMobileOpen(false), [location.pathname]);
+
+  useEffect(() => {
+    const syncAuth = () => setLoggedIn(isAuthenticated());
+    window.addEventListener("storage", syncAuth);
+    window.addEventListener("auth-changed", syncAuth);
+
+    return () => {
+      window.removeEventListener("storage", syncAuth);
+      window.removeEventListener("auth-changed", syncAuth);
+    };
+  }, []);
 
   return (
     <motion.nav
@@ -58,16 +71,31 @@ export function Navbar() {
         </div>
 
         <div className="hidden md:flex items-center gap-3">
-          <Link to="/login">
-            <Button variant="outline" size="sm" className="rounded-xl">
-              Log in
-            </Button>
-          </Link>
-          <Link to="/login">
-            <Button size="sm" className="rounded-xl">
-              Sign up
-            </Button>
-          </Link>
+          {loggedIn ? (
+            <>
+              <Link to="/profile">
+                <Button variant="outline" size="sm" className="rounded-xl gap-2">
+                  <UserCircle2 className="w-4 h-4" /> Profile
+                </Button>
+              </Link>
+              <Button size="sm" className="rounded-xl gap-2" onClick={logout}>
+                <LogOut className="w-4 h-4" /> Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="outline" size="sm" className="rounded-xl">
+                  Log in
+                </Button>
+              </Link>
+              <Link to="/login">
+                <Button size="sm" className="rounded-xl">
+                  Sign up
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
 
         <button
@@ -101,12 +129,27 @@ export function Navbar() {
                 </Link>
               ))}
               <div className="flex gap-3 pt-2">
-                <Link to="/login" className="flex-1">
-                  <Button variant="outline" className="w-full rounded-xl">Log in</Button>
-                </Link>
-                <Link to="/login" className="flex-1">
-                  <Button className="w-full rounded-xl">Sign up</Button>
-                </Link>
+                {loggedIn ? (
+                  <>
+                    <Link to="/profile" className="flex-1">
+                      <Button variant="outline" className="w-full rounded-xl gap-2">
+                        <UserCircle2 className="w-4 h-4" /> Profile
+                      </Button>
+                    </Link>
+                    <Button className="flex-1 rounded-xl gap-2" onClick={logout}>
+                      <LogOut className="w-4 h-4" /> Logout
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/login" className="flex-1">
+                      <Button variant="outline" className="w-full rounded-xl">Log in</Button>
+                    </Link>
+                    <Link to="/login" className="flex-1">
+                      <Button className="w-full rounded-xl">Sign up</Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>

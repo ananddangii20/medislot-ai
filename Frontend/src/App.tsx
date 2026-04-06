@@ -9,10 +9,12 @@ import Doctors from "./pages/Doctors";
 import DoctorProfile from "./pages/DoctorProfile";
 import Booking from "./pages/Booking";
 import Login from "./pages/Login";
+import Profile from "./pages/Profile";
 import PatientDashboard from "./pages/PatientDashboard";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import SymptomChecker from "./pages/SymptomChecker";
 import NotFound from "./pages/NotFound";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +31,14 @@ const App = () => (
           <Route path="/doctor/:id" element={<DoctorProfile />} />
           <Route path="/booking/:id" element={<Booking />} />
           <Route path="/login" element={<Login />} />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/patient-dashboard" element={<PatientDashboard />} />
           <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
           <Route path="/symptom-checker" element={<SymptomChecker />} />

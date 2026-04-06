@@ -6,6 +6,10 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { PageTransition } from "@/components/PageTransition";
 import { doctors } from "@/data/doctors";
+import { useEffect, useState } from "react";
+import { isAuthenticated } from "@/utils/auth";
+import { getCurrentUser } from "@/api";
+
 
 const stagger = {
   hidden: {},
@@ -17,6 +21,52 @@ const fadeUp = {
 };
 
 export default function Home() {
+  const [loggedIn, setLoggedIn] = useState(isAuthenticated());
+  const [userName, setUserName] = useState("");
+
+  useEffect(() => {
+    const syncAuth = () => setLoggedIn(isAuthenticated());
+    window.addEventListener("storage", syncAuth);
+    window.addEventListener("auth-changed", syncAuth);
+
+    return () => {
+      window.removeEventListener("storage", syncAuth);
+      window.removeEventListener("auth-changed", syncAuth);
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadUser() {
+      if (!loggedIn) {
+        if (isMounted) {
+          setUserName("");
+        }
+        return;
+      }
+
+      try {
+        const user = await getCurrentUser();
+        if (isMounted) {
+          setUserName(user?.name || "");
+        }
+      } catch {
+        if (isMounted) {
+          setUserName("");
+        }
+      }
+    }
+
+    loadUser();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [loggedIn]);
+
+  const greetingName = userName ? userName.split(" ")[0] : "there";
+
   return (
     <>
       <Navbar />
@@ -28,6 +78,11 @@ export default function Home() {
             <div className="container py-20 md:py-28">
               <div className="grid md:grid-cols-2 gap-12 items-center">
                 <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
+                  {loggedIn && (
+                    <motion.div variants={fadeUp} className="inline-flex rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
+                      Welcome, {greetingName}
+                    </motion.div>
+                  )}
                   <motion.div variants={fadeUp}>
                     <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
                       <Activity className="w-3.5 h-3.5" /> AI-Powered Healthcare
