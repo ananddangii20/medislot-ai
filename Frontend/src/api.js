@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://127.0.0.1:8000";
+const API_BASE_URL = "https://medislot-ai.onrender.com";
 
 async function request(endpoint, payload) {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
