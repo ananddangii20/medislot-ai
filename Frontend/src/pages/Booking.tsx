@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, CheckCircle, Calendar } from "lucide-react";
+import { ArrowLeft, Calendar, Clock3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
 import { PageTransition } from "@/components/PageTransition";
-import { doctors } from "@/data/doctors";
+import { useDoctors } from "@/hooks/useDoctors";
 import { toast } from "sonner";
 import { createAppointment } from "@/api";
 
@@ -17,6 +17,7 @@ const dates = Array.from({ length: 7 }, (_, i) => {
 
 export default function Booking() {
   const { id } = useParams();
+  const { doctors } = useDoctors();
   const doc = doctors.find((d) => d.id === id);
   const [selectedDate, setSelectedDate] = useState<Date>(dates[0]);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
@@ -70,30 +71,30 @@ export default function Booking() {
               {booked ? (
                 <motion.div
                   key="success"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="text-center py-20 space-y-4"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="py-14"
                 >
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: "spring", stiffness: 200, delay: 0.1 }}
-                    className="w-20 h-20 mx-auto rounded-full bg-green-50 flex items-center justify-center"
-                  >
-                    <CheckCircle className="w-10 h-10 text-green-500" />
-                  </motion.div>
-                  <h2 className="font-heading font-bold text-2xl">Booking Confirmed!</h2>
-                  <p className="text-muted-foreground text-sm">
-                    Your appointment with {doc.name} on{" "}
-                    {selectedDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} at {selectedSlot} is confirmed.
-                  </p>
-                  <div className="flex justify-center gap-3 pt-4">
-                    <Link to="/patient-dashboard">
-                      <Button className="rounded-xl">View Dashboard</Button>
-                    </Link>
-                    <Link to="/home">
-                      <Button variant="outline" className="rounded-xl">Go Home</Button>
-                    </Link>
+                  <div className="max-w-xl mx-auto rounded-3xl border border-amber-200 bg-amber-50/70 p-6 sm:p-8 text-center">
+                    <div className="w-16 h-16 mx-auto rounded-full bg-white border border-amber-200 flex items-center justify-center mb-4">
+                      <Clock3 className="w-8 h-8 text-amber-600" />
+                    </div>
+                    <h2 className="font-heading font-bold text-2xl text-amber-800">Waiting For Doctor Approval</h2>
+                    <p className="text-amber-900/80 text-sm mt-3">
+                      Your appointment request with {doc.name} on{" "}
+                      {selectedDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} at {selectedSlot} is under review.
+                    </p>
+                    <p className="text-amber-900/80 text-sm mt-2">
+                      Once approved, you will see the payment option in your dashboard.
+                    </p>
+                    <div className="flex justify-center gap-3 pt-6">
+                      <Link to="/patient-dashboard">
+                        <Button className="rounded-xl">Open Dashboard</Button>
+                      </Link>
+                      <Link to="/home">
+                        <Button variant="outline" className="rounded-xl">Back Home</Button>
+                      </Link>
+                    </div>
                   </div>
                 </motion.div>
               ) : (
@@ -105,7 +106,7 @@ export default function Booking() {
                     <img src={doc.image} alt={doc.name} className="w-14 h-14 rounded-xl object-cover" />
                     <div>
                       <h3 className="font-heading font-semibold text-sm">{doc.name}</h3>
-                      <p className="text-xs text-muted-foreground">{doc.specialization} · ${doc.fee}</p>
+                      <p className="text-xs text-muted-foreground">{doc.specialization} · INR {doc.fee}</p>
                     </div>
                   </div>
 
@@ -122,8 +123,8 @@ export default function Booking() {
                             key={d.toISOString()}
                             onClick={() => { setSelectedDate(d); setSelectedSlot(null); }}
                             className={`flex flex-col items-center px-4 py-3 rounded-xl border text-xs font-medium transition-all shrink-0 ${isSelected
-                                ? "border-primary bg-primary/5 text-primary"
-                                : "border-border hover:border-primary/30"
+                              ? "border-primary bg-primary/5 text-primary"
+                              : "border-border hover:border-primary/30"
                               }`}
                           >
                             <span className="text-[10px] uppercase text-muted-foreground">
@@ -145,8 +146,8 @@ export default function Booking() {
                           key={slot}
                           onClick={() => setSelectedSlot(slot)}
                           className={`px-4 py-2.5 rounded-xl border text-xs font-medium transition-all ${selectedSlot === slot
-                              ? "border-primary bg-primary text-primary-foreground"
-                              : "border-border hover:border-primary/30"
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border hover:border-primary/30"
                             }`}
                         >
                           {slot}

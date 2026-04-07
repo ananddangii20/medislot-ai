@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Star, Filter } from "lucide-react";
@@ -7,7 +7,8 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { PageTransition } from "@/components/PageTransition";
 import { SkeletonCard } from "@/components/SkeletonCard";
-import { doctors, specializations } from "@/data/doctors";
+import { useDoctors } from "@/hooks/useDoctors";
+import { buildSpecializations } from "@/utils/doctors";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -15,14 +16,11 @@ const fadeUp = {
 };
 
 export default function Doctors() {
-  const [loading, setLoading] = useState(true);
+  const { doctors, loading } = useDoctors();
   const [activeSpec, setActiveSpec] = useState("All");
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(t);
-  }, []);
+  const specializations = buildSpecializations(doctors);
 
   const filtered = activeSpec === "All"
     ? doctors
@@ -56,11 +54,10 @@ export default function Doctors() {
                     <button
                       key={s}
                       onClick={() => setActiveSpec(s)}
-                      className={`w-full text-left px-4 py-2.5 rounded-xl text-sm transition-colors ${
-                        activeSpec === s
+                      className={`w-full text-left px-4 py-2.5 rounded-xl text-sm transition-colors ${activeSpec === s
                           ? "bg-primary text-primary-foreground font-medium"
                           : "text-muted-foreground hover:bg-muted"
-                      }`}
+                        }`}
                     >
                       {s}
                     </button>
@@ -101,7 +98,7 @@ export default function Doctors() {
                             </div>
                             <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
                               <span>{doc.experience} yrs experience</span>
-                              <span className="font-semibold text-foreground">${doc.fee}</span>
+                              <span className="font-semibold text-foreground">INR {doc.fee}</span>
                             </div>
                             <Button variant="outline" className="w-full rounded-xl text-xs group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                               View Profile

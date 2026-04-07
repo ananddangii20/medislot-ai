@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
 import { PageTransition } from "@/components/PageTransition";
 import { Link } from "react-router-dom";
-import { doctors } from "@/data/doctors";
-import { getPatientAppointments } from "@/api";
+import { getPatientAppointments, payAppointmentCharge } from "@/api";
 import { toast } from "sonner";
+import { useDoctors } from "@/hooks/useDoctors";
 
 type Appointment = {
   id: string;
@@ -15,11 +15,15 @@ type Appointment = {
   date: string;
   time: string;
   status: "pending" | "accepted" | "rejected";
+  appointmentCharge: number | null;
+  paymentStatus: "not_required" | "pending" | "paid";
 };
 
 export default function PatientDashboard() {
+  const { doctors } = useDoctors();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [payingId, setPayingId] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -40,6 +44,8 @@ export default function PatientDashboard() {
           }),
           time: a.time,
           status: a.status,
+          appointmentCharge: typeof a.appointment_charge === "number" ? a.appointment_charge : null,
+          paymentStatus: a.payment_status || "not_required",
         }));
 
         setAppointments(mapped);
@@ -70,6 +76,19 @@ export default function PatientDashboard() {
   const completedCount = appointments.filter((a) => a.status === "accepted").length;
 
   const findDoctor = (doctorName: string) => doctors.find((d) => d.name === doctorName);
+
+  const handlePay = async (appointmentId: string) => {
+    try {
+      setPayingId(appointmentId);
+      await payAppointmentCharge(appointmentId);
+      setAppointments((prev) => prev.map((a) => (a.id === appointmentId ? { ...a, paymentStatus: "paid" } : a)));
+      toast.success("Payment completed successfully");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to complete payment");
+    } finally {
+      setPayingId(null);
+    }
+  };
 
   return (
     <>
@@ -139,6 +158,23 @@ export default function PatientDashboard() {
                       }`}>
                       {appt.status === "accepted" ? "Accepted" : "Pending"}
                     </span>
+                    {appt.status === "accepted" && appt.appointmentCharge !== null && (
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-xs font-medium">INR {appt.appointmentCharge}</span>
+                        {appt.paymentStatus === "paid" ? (
+                          <span className="text-[11px] px-2 py-1 rounded-full bg-green-50 text-green-700">Paid</span>
+                        ) : (
+                          <Button
+                            size="sm"
+                            className="rounded-lg h-7 text-[11px]"
+                            disabled={payingId === appt.id}
+                            onClick={() => handlePay(appt.id)}
+                          >
+                            {payingId === appt.id ? "Paying..." : "Pay Now"}
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </motion.div>
                 ))}
               </div>

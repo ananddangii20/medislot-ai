@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { PageTransition } from "@/components/PageTransition";
-import { doctors } from "@/data/doctors";
+import { useDoctors } from "@/hooks/useDoctors";
 
 export default function DoctorProfile() {
   const { id } = useParams();
+  const { doctors } = useDoctors();
   const doc = doctors.find((d) => d.id === id);
 
   if (!doc) {
@@ -80,7 +81,7 @@ export default function DoctorProfile() {
               <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
                 <div>
                   <p className="text-xs text-muted-foreground">Consultation Fee</p>
-                  <p className="font-heading font-bold text-xl">${doc.fee}</p>
+                  <p className="font-heading font-bold text-xl">INR {doc.fee}</p>
                 </div>
                 <Link to={`/booking/${doc.id}`}>
                   <Button size="lg" className="rounded-xl">Book Appointment</Button>

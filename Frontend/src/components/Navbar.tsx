@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { getUserRole, isAuthenticated, logout } from "@/utils/auth";
 
 const baseNavLinks = [
-  { label: "Home", path: "/" },
+  { label: "Home", path: "/home" },
   { label: "Doctors", path: "/doctors" },
   { label: "AI Checker", path: "/symptom-checker" },
 ];
@@ -54,7 +54,7 @@ export function Navbar() {
         }`}
     >
       <div className="container flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 group">
+        <Link to="/home" className="flex items-center gap-2 group">
           <div className="w-9 h-9 rounded-xl bg-hero-gradient flex items-center justify-center">
             <Heart className="w-5 h-5 text-primary-foreground" fill="currentColor" />
           </div>

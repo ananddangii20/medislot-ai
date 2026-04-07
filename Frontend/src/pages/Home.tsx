@@ -1,14 +1,14 @@
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Search, Calendar, CheckCircle, ArrowRight, Star, Brain, Stethoscope, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { PageTransition } from "@/components/PageTransition";
-import { doctors } from "@/data/doctors";
 import { useEffect, useState } from "react";
 import { isAuthenticated } from "@/utils/auth";
 import { getCurrentUser } from "@/api";
+import { useDoctors } from "@/hooks/useDoctors";
 
 
 const stagger = {
@@ -21,6 +21,8 @@ const fadeUp = {
 };
 
 export default function Home() {
+  const { doctors } = useDoctors();
+  const navigate = useNavigate();
   const [loggedIn, setLoggedIn] = useState(isAuthenticated());
   const [userName, setUserName] = useState("");
 
@@ -93,7 +95,7 @@ export default function Home() {
                     <span className="text-gradient">Instantly</span>
                   </motion.h1>
                   <motion.p variants={fadeUp} className="text-muted-foreground text-lg max-w-md leading-relaxed">
-                    Find top-rated doctors, check symptoms with AI, and book appointments in seconds. Your health journey starts here.
+                    Find top-rated doctors across India, check symptoms with AI, and book appointments in seconds.
                   </motion.p>
                   <motion.div variants={fadeUp} className="flex flex-wrap gap-3">
                     <Link to="/doctors">
@@ -109,12 +111,12 @@ export default function Home() {
                   </motion.div>
                   <motion.div variants={fadeUp} className="flex items-center gap-6 pt-2">
                     <div className="text-center">
-                      <p className="font-heading font-bold text-2xl">500+</p>
+                      <p className="font-heading font-bold text-2xl">700+</p>
                       <p className="text-xs text-muted-foreground">Doctors</p>
                     </div>
                     <div className="w-px h-10 bg-border" />
                     <div className="text-center">
-                      <p className="font-heading font-bold text-2xl">50K+</p>
+                      <p className="font-heading font-bold text-2xl">1L+</p>
                       <p className="text-xs text-muted-foreground">Patients</p>
                     </div>
                     <div className="w-px h-10 bg-border" />
@@ -176,7 +178,7 @@ export default function Home() {
               <motion.div variants={fadeUp} className="flex items-end justify-between">
                 <div>
                   <h2 className="font-heading font-bold text-2xl md:text-3xl">Featured Doctors</h2>
-                  <p className="text-muted-foreground text-sm mt-1">Top-rated specialists near you</p>
+                  <p className="text-muted-foreground text-sm mt-1">Top-rated specialists for Indian patients</p>
                 </div>
                 <Link to="/doctors" className="text-primary text-sm font-medium hover:underline hidden sm:block">
                   View all →
@@ -185,28 +187,31 @@ export default function Home() {
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {doctors.slice(0, 3).map((doc) => (
                   <motion.div key={doc.id} variants={fadeUp}>
-                    <Link to={`/doctor/${doc.id}`}>
-                      <div className="group rounded-2xl border border-border bg-card p-5 transition-all duration-300 hover:card-shadow-hover hover:-translate-y-1">
-                        <div className="flex items-center gap-4 mb-4">
-                          <img src={doc.image} alt={doc.name} className="w-14 h-14 rounded-xl object-cover" />
-                          <div className="min-w-0">
-                            <h3 className="font-heading font-semibold text-sm truncate">{doc.name}</h3>
-                            <p className="text-xs text-muted-foreground">{doc.specialization}</p>
-                          </div>
+                    <div className="group rounded-2xl border border-border bg-card p-5 transition-all duration-300 hover:card-shadow-hover hover:-translate-y-1">
+                      <div className="flex items-center gap-4 mb-4">
+                        <img src={doc.image} alt={doc.name} className="w-14 h-14 rounded-xl object-cover" />
+                        <div className="min-w-0">
+                          <h3 className="font-heading font-semibold text-sm truncate">{doc.name}</h3>
+                          <p className="text-xs text-muted-foreground">{doc.specialization}</p>
                         </div>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
-                          <span>{doc.experience} yrs exp</span>
-                          <span className="flex items-center gap-1">
-                            <Star className="w-3.5 h-3.5 text-amber-400" fill="currentColor" />
-                            {doc.rating}
-                          </span>
-                          <span>{doc.reviews} reviews</span>
-                        </div>
-                        <Button variant="outline" className="w-full rounded-xl text-xs group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
+                        <span>{doc.experience} yrs exp</span>
+                        <span className="flex items-center gap-1">
+                          <Star className="w-3.5 h-3.5 text-amber-400" fill="currentColor" />
+                          {doc.rating}
+                        </span>
+                        <span>{doc.reviews} reviews</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button variant="outline" className="w-full rounded-xl text-xs" onClick={() => navigate(`/doctor/${doc.id}`)}>
                           View Profile
                         </Button>
+                        <Button className="w-full rounded-xl text-xs" onClick={() => navigate(`/booking/${doc.id}`)}>
+                          Book Appointment
+                        </Button>
                       </div>
-                    </Link>
+                    </div>
                   </motion.div>
                 ))}
               </div>

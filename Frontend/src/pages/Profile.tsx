@@ -10,7 +10,6 @@ import { logout } from "@/utils/auth";
 type UserProfile = {
   name?: string;
   email?: string;
-  provider?: string;
 };
 
 export default function Profile() {
@@ -92,7 +91,7 @@ export default function Profile() {
                   <div className="w-24 h-24 rounded-full bg-hero-gradient flex items-center justify-center text-white text-3xl font-bold">
                     {initials}
                   </div>
-                  <div className="text-sm text-muted-foreground">{user.provider || "local"} account</div>
+                  <div className="text-sm text-muted-foreground">Account details</div>
                 </div>
 
                 <div className="space-y-4">
@@ -106,11 +105,6 @@ export default function Profile() {
                   <div className="rounded-2xl border border-border p-4">
                     <div className="text-sm text-muted-foreground mb-1">Email</div>
                     <div className="font-medium">{user.email || "Unknown"}</div>
-                  </div>
-
-                  <div className="rounded-2xl border border-border p-4">
-                    <div className="text-sm text-muted-foreground mb-1">Provider</div>
-                    <div className="font-medium">{user.provider || "local"}</div>
                   </div>
                 </div>
               </div>

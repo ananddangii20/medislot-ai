@@ -10,6 +10,8 @@ from app.schemas import (
     GoogleAuthRequest,
     AppointmentCreate,
     AppointmentStatusUpdate,
+    DoctorFeeUpdate,
+    DoctorProfileUpdate,
 )
 from app.db import users_collection, appointments_collection
 from app.auth.utils import hash_password, verify_password, create_token
@@ -33,7 +35,23 @@ def serialize_appointment(item: dict) -> dict:
         "time": item["time"],
         "reason": item["reason"],
         "status": item["status"],
+        "appointment_charge": item.get("appointment_charge"),
+        "payment_status": item.get("payment_status", "not_required"),
+        "paid_at": item.get("paid_at"),
         "created_at": item.get("created_at"),
+    }
+
+
+def serialize_doctor(item: dict) -> dict:
+    return {
+        "id": str(item["_id"]),
+        "name": item.get("name", "Doctor"),
+        "email": item.get("email", ""),
+        "specialization": item.get("specialization", "General Physician"),
+        "experience": item.get("experience", 5),
+        "bio": item.get("bio", "Experienced Indian healthcare professional available for online consultation."),
+        "consultation_fee": item.get("consultation_fee", 1000),
+        "image": item.get("image", ""),
     }
 
 
@@ -84,6 +102,7 @@ async def signup(user: UserSignup):
                     "provider": "local",
                     "otp": otp,
                     "otp_expires_at": otp_expiry,
+                    "consultation_fee": existing.get("consultation_fee", 1000) if user.role == "doctor" else existing.get("consultation_fee"),
                 }
             },
         )
@@ -104,6 +123,11 @@ async def signup(user: UserSignup):
         "provider": "local",
         "otp": otp,
         "otp_expires_at": otp_expiry,
+        "consultation_fee": 1000 if user.role == "doctor" else None,
+        "specialization": "General Physician" if user.role == "doctor" else None,
+        "experience": 5 if user.role == "doctor" else None,
+        "bio": "Experienced Indian healthcare professional available for online consultation." if user.role == "doctor" else None,
+        "image": "" if user.role == "doctor" else None,
     })
 
     try:
@@ -232,11 +256,66 @@ async def google_auth(payload: GoogleAuthRequest):
 @router.get("/me")
 async def get_me(credentials: HTTPAuthorizationCredentials = Depends(security)):
     user = await get_current_user(credentials)
+    user["id"] = str(user.get("_id"))
     user.pop("_id", None)
     user.pop("password", None)
     user.pop("otp", None)
     user.pop("otp_expires_at", None)
     return user
+
+
+@router.get("/doctors")
+async def get_doctors():
+    doctor_items = await users_collection.find(
+        {
+            "role": "doctor",
+            "is_verified": True,
+        }
+    ).to_list(500)
+
+    return {"doctors": [serialize_doctor(item) for item in doctor_items]}
+
+
+@router.put("/doctor/consultation-fee")
+async def set_doctor_consultation_fee(
+    payload: DoctorFeeUpdate,
+    current_user: dict = Depends(get_current_user),
+):
+    await require_role("doctor", current_user)
+
+    await users_collection.update_one(
+        {"_id": current_user["_id"]},
+        {"$set": {"consultation_fee": payload.consultation_fee}},
+    )
+
+    current_user["consultation_fee"] = payload.consultation_fee
+    return {
+        "message": "Consultation fee updated",
+        "consultation_fee": payload.consultation_fee,
+    }
+
+
+@router.put("/doctor/profile")
+async def update_doctor_profile(
+    payload: DoctorProfileUpdate,
+    current_user: dict = Depends(get_current_user),
+):
+    await require_role("doctor", current_user)
+
+    await users_collection.update_one(
+        {"_id": current_user["_id"]},
+        {
+            "$set": {
+                "name": payload.name.strip(),
+                "specialization": payload.specialization.strip(),
+                "experience": payload.experience,
+                "bio": payload.bio.strip(),
+                "image": payload.image.strip(),
+            }
+        },
+    )
+
+    return {"message": "Doctor profile updated successfully"}
 
 
 @router.post("/appointments")
@@ -246,15 +325,31 @@ async def create_appointment(
 ):
     await require_role("patient", current_user)
 
+    doctor_record = None
+    if ObjectId.is_valid(payload.doctor_id):
+        doctor_record = await users_collection.find_one(
+            {
+                "_id": ObjectId(payload.doctor_id),
+                "role": "doctor",
+                "is_verified": True,
+            }
+        )
+
+    doctor_id = str(doctor_record["_id"]) if doctor_record else payload.doctor_id
+    doctor_name = doctor_record.get("name", payload.doctor_name) if doctor_record else payload.doctor_name
+
     appointment = {
-        "doctor_id": payload.doctor_id,
-        "doctor_name": payload.doctor_name,
+        "doctor_id": doctor_id,
+        "doctor_name": doctor_name,
         "patient_name": current_user.get("name", "Patient"),
         "patient_email": current_user["email"],
         "date": payload.date,
         "time": payload.time,
         "reason": payload.reason,
         "status": "pending",
+        "appointment_charge": None,
+        "payment_status": "not_required",
+        "paid_at": None,
         "created_at": datetime.now(timezone.utc),
     }
 
@@ -280,8 +375,16 @@ async def get_patient_appointments(current_user: dict = Depends(get_current_user
 async def get_doctor_appointments(current_user: dict = Depends(get_current_user)):
     await require_role("doctor", current_user)
 
+    doctor_id = str(current_user.get("_id"))
     items = (
-        await appointments_collection.find({"doctor_name": current_user.get("name", "")})
+        await appointments_collection.find(
+            {
+                "$or": [
+                    {"doctor_id": doctor_id},
+                    {"doctor_name": current_user.get("name", "")},
+                ]
+            }
+        )
         .sort("created_at", -1)
         .to_list(200)
     )
@@ -304,13 +407,67 @@ async def update_appointment_status(
     if not db_item:
         raise HTTPException(404, "Appointment not found")
 
-    if db_item.get("doctor_name") != current_user.get("name"):
+    current_doctor_id = str(current_user.get("_id"))
+    owns_appointment = (
+        db_item.get("doctor_id") == current_doctor_id
+        or db_item.get("doctor_name") == current_user.get("name")
+    )
+
+    if not owns_appointment:
         raise HTTPException(403, "You can update only your own appointment requests")
+
+    update_fields = {"status": payload.status}
+    if payload.status == "accepted":
+        update_fields["appointment_charge"] = current_user.get("consultation_fee", 1000)
+        update_fields["payment_status"] = "pending"
+    else:
+        update_fields["appointment_charge"] = None
+        update_fields["payment_status"] = "not_required"
+        update_fields["paid_at"] = None
 
     await appointments_collection.update_one(
         {"_id": ObjectId(appointment_id)},
-        {"$set": {"status": payload.status}},
+        {"$set": update_fields},
     )
 
-    db_item["status"] = payload.status
-    return {"message": "Appointment updated", "appointment": serialize_appointment(db_item)}
+    updated_item = await appointments_collection.find_one({"_id": ObjectId(appointment_id)})
+    return {"message": "Appointment updated", "appointment": serialize_appointment(updated_item)}
+
+
+@router.post("/appointments/{appointment_id}/pay")
+async def pay_appointment_charge(
+    appointment_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    await require_role("patient", current_user)
+
+    if not ObjectId.is_valid(appointment_id):
+        raise HTTPException(400, "Invalid appointment id")
+
+    db_item = await appointments_collection.find_one(
+        {
+            "_id": ObjectId(appointment_id),
+            "patient_email": current_user.get("email"),
+        }
+    )
+    if not db_item:
+        raise HTTPException(404, "Appointment not found")
+
+    if db_item.get("status") != "accepted":
+        raise HTTPException(400, "Only accepted appointments can be paid")
+
+    if db_item.get("payment_status") == "paid":
+        return {"message": "Payment already completed", "appointment": serialize_appointment(db_item)}
+
+    await appointments_collection.update_one(
+        {"_id": ObjectId(appointment_id)},
+        {
+            "$set": {
+                "payment_status": "paid",
+                "paid_at": datetime.now(timezone.utc),
+            }
+        },
+    )
+
+    updated_item = await appointments_collection.find_one({"_id": ObjectId(appointment_id)})
+    return {"message": "Appointment payment successful", "appointment": serialize_appointment(updated_item)}

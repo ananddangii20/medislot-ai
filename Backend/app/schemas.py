@@ -1,5 +1,5 @@
 from typing import Literal
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 class UserSignup(BaseModel):
     name: str
@@ -36,3 +36,15 @@ class AppointmentCreate(BaseModel):
 
 class AppointmentStatusUpdate(BaseModel):
     status: Literal["accepted", "rejected"]
+
+
+class DoctorFeeUpdate(BaseModel):
+    consultation_fee: float = Field(gt=0)
+
+
+class DoctorProfileUpdate(BaseModel):
+    name: str
+    specialization: str
+    experience: int = Field(ge=0)
+    bio: str
+    image: str

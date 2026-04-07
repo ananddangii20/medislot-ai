@@ -63,6 +63,23 @@ export async function getCurrentUser() {
   return authedRequest("/auth/me", { method: "GET" });
 }
 
+export async function getDoctors() {
+  const res = await fetch(`${API_BASE_URL}/auth/doctors`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(data?.detail || "Request failed. Please try again.");
+  }
+
+  return data;
+}
+
 export function createAppointment(payload: {
   doctor_id: string;
   doctor_name: string;
@@ -88,5 +105,31 @@ export function updateAppointmentStatus(appointmentId: string, status: "accepted
   return authedRequest(`/auth/appointments/${appointmentId}/status`, {
     method: "PUT",
     body: JSON.stringify({ status }),
+  });
+}
+
+export function updateDoctorConsultationFee(consultationFee: number) {
+  return authedRequest("/auth/doctor/consultation-fee", {
+    method: "PUT",
+    body: JSON.stringify({ consultation_fee: consultationFee }),
+  });
+}
+
+export function updateDoctorProfile(payload: {
+  name: string;
+  specialization: string;
+  experience: number;
+  bio: string;
+  image: string;
+}) {
+  return authedRequest("/auth/doctor/profile", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function payAppointmentCharge(appointmentId: string) {
+  return authedRequest(`/auth/appointments/${appointmentId}/pay`, {
+    method: "POST",
   });
 }
