@@ -11,23 +11,6 @@ interface Message {
   text: string;
 }
 
-const aiResponses: Record<string, string> = {
-  headache: "Headaches can have many causes including tension, dehydration, or migraines. I'd recommend consulting a **Neurologist** if they're frequent or severe. In the meantime, ensure you're well-hydrated and getting enough rest.",
-  fever: "A fever often indicates your body is fighting an infection. If it's above 102°F or persistent for more than 3 days, please see a **General Physician** immediately. Stay hydrated and rest.",
-  chest: "Chest pain should always be taken seriously. If it's sudden or severe, seek emergency care immediately. For recurring mild discomfort, schedule an appointment with a **Cardiologist** for evaluation.",
-  skin: "Skin issues can range from allergies to infections. A **Dermatologist** can help diagnose and treat the condition. Avoid scratching and keep the area clean.",
-  back: "Back pain is common and can be caused by posture, strain, or spinal issues. Try gentle stretching and OTC pain relief. If persistent, consult an **Orthopedic** specialist.",
-  default: "Based on your symptoms, I'd recommend scheduling an appointment with a **General Physician** for a proper evaluation. They can refer you to a specialist if needed.",
-};
-
-function getAIResponse(input: string): string {
-  const lower = input.toLowerCase();
-  for (const [key, resp] of Object.entries(aiResponses)) {
-    if (key !== "default" && lower.includes(key)) return resp;
-  }
-  return aiResponses.default;
-}
-
 export default function SymptomChecker() {
   const [messages, setMessages] = useState<Message[]>([
     { id: 0, role: "ai", text: "Hi! I'm your AI health assistant. Describe your symptoms and I'll suggest the right specialist for you." },
@@ -40,19 +23,59 @@ export default function SymptomChecker() {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typing]);
 
-  const send = () => {
+  const send = async () => {
     if (!input.trim()) return;
-    const userMsg: Message = { id: Date.now(), role: "user", text: input.trim() };
+
+    const userMsg: Message = {
+      id: Date.now(),
+      role: "user",
+      text: input.trim(),
+    };
+
     setMessages((prev) => [...prev, userMsg]);
     const userInput = input;
     setInput("");
     setTyping(true);
 
-    setTimeout(() => {
-      setTyping(false);
-      const aiMsg: Message = { id: Date.now() + 1, role: "ai", text: getAIResponse(userInput) };
+    try {
+      const res = await fetch("http://localhost:8000/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: userInput,
+          role: "patient",
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data?.detail || "Server error. Please try again later.");
+      }
+
+      const reply = typeof data?.response === "string" && data.response.trim().length > 0
+        ? data.response
+        : "⚠️ The AI service returned an empty response. Please try again.";
+
+      const aiMsg: Message = {
+        id: Date.now() + 1,
+        role: "ai",
+        text: reply,
+      };
+
       setMessages((prev) => [...prev, aiMsg]);
-    }, 1200);
+    } catch (err) {
+      const errorMsg: Message = {
+        id: Date.now() + 1,
+        role: "ai",
+        text: err instanceof Error ? `⚠️ ${err.message}` : "⚠️ Server error. Please try again later.",
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setTyping(false);
+    }
   };
 
   return (
@@ -81,14 +104,19 @@ export default function SymptomChecker() {
                         <Bot className="w-4 h-4 text-primary" />
                       </div>
                     )}
-                    <div
-                      className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
-                        msg.role === "user"
-                          ? "bg-primary text-primary-foreground rounded-br-md"
-                          : "bg-muted rounded-bl-md"
-                      }`}
-                      dangerouslySetInnerHTML={{ __html: msg.text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }}
-                    />
+                      <div
+                        className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                          msg.role === "user"
+                            ? "bg-primary text-primary-foreground rounded-br-md"
+                            : "bg-muted rounded-bl-md"
+                        }`}
+                        dangerouslySetInnerHTML={{ 
+                          __html: (msg.text || "")
+                            .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                            .replace(/\n\d\.\s/g, (match) => `<br /><strong>${match.trim()}</strong> `)
+                            .replace(/\n/g, "<br />")
+                        }}
+                      />
                     {msg.role === "user" && (
                       <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
                         <User className="w-4 h-4 text-muted-foreground" />
