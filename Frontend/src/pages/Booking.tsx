@@ -7,6 +7,7 @@ import { Navbar } from "@/components/Navbar";
 import { PageTransition } from "@/components/PageTransition";
 import { doctors } from "@/data/doctors";
 import { toast } from "sonner";
+import { createAppointment } from "@/api";
 
 const dates = Array.from({ length: 7 }, (_, i) => {
   const d = new Date();
@@ -20,6 +21,8 @@ export default function Booking() {
   const [selectedDate, setSelectedDate] = useState<Date>(dates[0]);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [booked, setBooked] = useState(false);
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   if (!doc) {
     return (
@@ -32,10 +35,25 @@ export default function Booking() {
     );
   }
 
-  const handleBook = () => {
+  const handleBook = async () => {
     if (!selectedSlot) return;
-    setBooked(true);
-    toast.success("Appointment booked successfully!");
+
+    try {
+      setSubmitting(true);
+      await createAppointment({
+        doctor_id: doc.id,
+        doctor_name: doc.name,
+        date: selectedDate.toISOString().split("T")[0],
+        time: selectedSlot,
+        reason: reason.trim() || "General consultation",
+      });
+      setBooked(true);
+      toast.success("Appointment request sent successfully!");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to send appointment request");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -103,11 +121,10 @@ export default function Booking() {
                           <button
                             key={d.toISOString()}
                             onClick={() => { setSelectedDate(d); setSelectedSlot(null); }}
-                            className={`flex flex-col items-center px-4 py-3 rounded-xl border text-xs font-medium transition-all shrink-0 ${
-                              isSelected
+                            className={`flex flex-col items-center px-4 py-3 rounded-xl border text-xs font-medium transition-all shrink-0 ${isSelected
                                 ? "border-primary bg-primary/5 text-primary"
                                 : "border-border hover:border-primary/30"
-                            }`}
+                              }`}
                           >
                             <span className="text-[10px] uppercase text-muted-foreground">
                               {d.toLocaleDateString("en-US", { weekday: "short" })}
@@ -127,11 +144,10 @@ export default function Booking() {
                         <button
                           key={slot}
                           onClick={() => setSelectedSlot(slot)}
-                          className={`px-4 py-2.5 rounded-xl border text-xs font-medium transition-all ${
-                            selectedSlot === slot
+                          className={`px-4 py-2.5 rounded-xl border text-xs font-medium transition-all ${selectedSlot === slot
                               ? "border-primary bg-primary text-primary-foreground"
                               : "border-border hover:border-primary/30"
-                          }`}
+                            }`}
                         >
                           {slot}
                         </button>
@@ -139,13 +155,23 @@ export default function Booking() {
                     </div>
                   </div>
 
+                  <div>
+                    <h2 className="font-heading font-semibold text-sm mb-3">Reason for Visit</h2>
+                    <textarea
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      placeholder="Describe your symptoms or reason"
+                      className="w-full min-h-24 p-3 border rounded-xl text-sm"
+                    />
+                  </div>
+
                   <Button
                     size="lg"
                     className="w-full rounded-xl"
-                    disabled={!selectedSlot}
+                    disabled={!selectedSlot || submitting}
                     onClick={handleBook}
                   >
-                    Confirm Booking
+                    {submitting ? "Sending Request..." : "Confirm Booking"}
                   </Button>
                 </motion.div>
               )}

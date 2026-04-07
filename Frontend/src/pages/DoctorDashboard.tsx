@@ -1,35 +1,73 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Calendar, Check, X, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
 import { PageTransition } from "@/components/PageTransition";
 import { toast } from "sonner";
+import { getDoctorAppointments, updateAppointmentStatus } from "@/api";
 
 type Status = "pending" | "accepted" | "rejected";
 
 interface Appointment {
-  id: number;
+  id: string;
   patient: string;
-  age: number;
   date: string;
   time: string;
   reason: string;
   status: Status;
 }
 
-const appointments: Appointment[] = [
-  { id: 1, patient: "Alex Johnson", age: 34, date: "Apr 10, 2026", time: "10:00 AM", reason: "Chest pain", status: "pending" },
-  { id: 2, patient: "Maria Garcia", age: 28, date: "Apr 10, 2026", time: "11:30 AM", reason: "Follow-up", status: "pending" },
-  { id: 3, patient: "David Lee", age: 45, date: "Apr 10, 2026", time: "2:00 PM", reason: "Annual checkup", status: "accepted" },
-];
-
 export default function DoctorDashboard() {
-  const [items, setItems] = useState(appointments);
+  const [items, setItems] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const updateStatus = (id: number, status: Status) => {
-    setItems((prev) => prev.map((a) => (a.id === id ? { ...a, status } : a)));
-    toast.success(status === "accepted" ? "Appointment accepted" : "Appointment declined");
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadAppointments() {
+      try {
+        setLoading(true);
+        const data = await getDoctorAppointments();
+        if (!isMounted) return;
+
+        const mapped: Appointment[] = (data.appointments || []).map((a: any) => ({
+          id: a.id,
+          patient: a.patient_name,
+          date: new Date(a.date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          }),
+          time: a.time,
+          reason: a.reason,
+          status: a.status,
+        }));
+
+        setItems(mapped);
+      } catch (error: any) {
+        toast.error(error?.message || "Failed to load appointments");
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    loadAppointments();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const updateStatus = async (id: string, status: Status) => {
+    if (status === "pending") return;
+
+    try {
+      await updateAppointmentStatus(id, status);
+      setItems((prev) => prev.map((a) => (a.id === id ? { ...a, status } : a)));
+      toast.success(status === "accepted" ? "Appointment accepted" : "Appointment declined");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to update appointment status");
+    }
   };
 
   const statusColors: Record<Status, string> = {
@@ -66,6 +104,8 @@ export default function DoctorDashboard() {
 
             {/* Appointments */}
             <h2 className="font-heading font-semibold text-lg mb-4">Appointments</h2>
+            {loading && <p className="text-sm text-muted-foreground">Loading appointment requests...</p>}
+            {!loading && items.length === 0 && <p className="text-sm text-muted-foreground">No appointment requests found.</p>}
             <div className="space-y-3">
               {items.map((appt, i) => (
                 <motion.div
@@ -77,7 +117,7 @@ export default function DoctorDashboard() {
                 >
                   <div className="flex-1">
                     <h3 className="font-heading font-semibold text-sm">{appt.patient}</h3>
-                    <p className="text-xs text-muted-foreground">Age {appt.age} · {appt.reason}</p>
+                    <p className="text-xs text-muted-foreground">{appt.reason}</p>
                     <p className="text-xs text-muted-foreground mt-1">{appt.date} at {appt.time}</p>
                   </div>
                   <div className="flex items-center gap-2">

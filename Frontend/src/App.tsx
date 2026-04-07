@@ -29,7 +29,14 @@ const App = () => (
           <Route path="/home" element={<Home />} />
           <Route path="/doctors" element={<Doctors />} />
           <Route path="/doctor/:id" element={<DoctorProfile />} />
-          <Route path="/booking/:id" element={<Booking />} />
+          <Route
+            path="/booking/:id"
+            element={
+              <ProtectedRoute allowedRoles={["patient"]}>
+                <Booking />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/login" element={<Login />} />
           <Route
             path="/profile"
@@ -39,8 +46,22 @@ const App = () => (
               </ProtectedRoute>
             }
           />
-          <Route path="/patient-dashboard" element={<PatientDashboard />} />
-          <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
+          <Route
+            path="/patient-dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["patient"]}>
+                <PatientDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/doctor-dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["doctor"]}>
+                <DoctorDashboard />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/symptom-checker" element={<SymptomChecker />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

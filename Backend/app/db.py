@@ -10,3 +10,4 @@ load_dotenv(BASE_DIR / ".env")
 client = AsyncIOMotorClient(os.getenv("MONGO_URI"))
 db = client["medislot"]
 users_collection = db["users"]
+appointments_collection = db["appointments"]

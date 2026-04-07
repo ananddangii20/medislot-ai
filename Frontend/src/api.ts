@@ -18,12 +18,37 @@ async function request(endpoint: string, payload: unknown) {
   return data;
 }
 
-export function signupUser(payload: { name: string; email: string; password: string }) {
+async function authedRequest(endpoint: string, options: RequestInit = {}) {
+  const token = localStorage.getItem("medislot_token");
+
+  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      ...(options.headers || {}),
+    },
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(data?.detail || "Request failed. Please try again.");
+  }
+
+  return data;
+}
+
+export function signupUser(payload: { name: string; email: string; password: string; role: "patient" | "doctor" }) {
   return request("/auth/signup", payload);
 }
 
 export function verifyEmailOtp(payload: { email: string; otp: string }) {
   return request("/auth/verify-email", payload);
+}
+
+export function resendEmailOtp(payload: { email: string }) {
+  return request("/auth/resend-otp", payload);
 }
 
 export function loginUser(payload: { email: string; password: string }) {
@@ -35,15 +60,33 @@ export function googleAuthUser(payload: { name: string; email: string; uid: stri
 }
 
 export async function getCurrentUser() {
-  const token = localStorage.getItem("medislot_token");
+  return authedRequest("/auth/me", { method: "GET" });
+}
 
-  const res = await fetch(`${API_BASE_URL}/auth/me`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+export function createAppointment(payload: {
+  doctor_id: string;
+  doctor_name: string;
+  date: string;
+  time: string;
+  reason: string;
+}) {
+  return authedRequest("/auth/appointments", {
+    method: "POST",
+    body: JSON.stringify(payload),
   });
+}
 
-  if (!res.ok) throw new Error("Failed to fetch user");
+export function getPatientAppointments() {
+  return authedRequest("/auth/appointments/patient", { method: "GET" });
+}
 
-  return res.json();
+export function getDoctorAppointments() {
+  return authedRequest("/auth/appointments/doctor", { method: "GET" });
+}
+
+export function updateAppointmentStatus(appointmentId: string, status: "accepted" | "rejected") {
+  return authedRequest(`/auth/appointments/${appointmentId}/status`, {
+    method: "PUT",
+    body: JSON.stringify({ status }),
+  });
 }

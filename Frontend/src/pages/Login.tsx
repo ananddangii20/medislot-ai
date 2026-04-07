@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Heart, Mail, Lock, User, Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
+import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageTransition } from "@/components/PageTransition";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { googleAuthUser, loginUser, signupUser, verifyEmailOtp } from "@/api";
+import { googleAuthUser, loginUser, resendEmailOtp, signupUser, verifyEmailOtp } from "@/api";
 import { auth, googleProvider } from "@/firebase";
 import { signInWithPopup } from "firebase/auth";
+import { setAuthSession } from "@/utils/auth";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ export default function Login() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"patient" | "doctor">("patient");
   const [otp, setOtp] = useState("");
 
   // ✅ FIXED validation (button issue solved)
@@ -43,6 +45,7 @@ export default function Login() {
     setEmail("");
     setPassword("");
     setShowPass(false);
+    setRole("patient");
   };
 
   const switchAuthMode = () => {
@@ -77,11 +80,10 @@ export default function Login() {
         uid: user.uid,
       });
 
-      localStorage.setItem("medislot_token", backendResponse.access_token);
-      window.dispatchEvent(new Event("auth-changed"));
+      setAuthSession(backendResponse.access_token, backendResponse.role || "patient");
 
       toast.success("Google login successful 🚀");
-      navigate("/home");
+      navigate((backendResponse.role || "patient") === "doctor" ? "/doctor-dashboard" : "/patient-dashboard");
     } catch (error: any) {
       toast.error(error?.message || "Google login failed");
     } finally {
@@ -128,12 +130,11 @@ export default function Login() {
       if (isLogin) {
         const res = await loginUser({ email, password });
 
-        localStorage.setItem("medislot_token", res.access_token);
-        window.dispatchEvent(new Event("auth-changed"));
+        setAuthSession(res.access_token, res.role || "patient");
         toast.success("Login successful 🎉");
-        navigate("/home");
+        navigate((res.role || "patient") === "doctor" ? "/doctor-dashboard" : "/patient-dashboard");
       } else {
-        await signupUser({ name, email, password });
+        await signupUser({ name, email, password, role });
 
         toast.success("Signup done → verify OTP");
         setPendingVerificationEmail(email);
@@ -170,12 +171,32 @@ export default function Login() {
             <form onSubmit={handleSubmit} className="space-y-4">
 
               {step === "otp" ? (
-                <input
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  placeholder="Enter OTP"
-                  className="w-full p-3 border rounded-xl"
-                />
+                <>
+                  <input
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    placeholder="Enter OTP"
+                    className="w-full p-3 border rounded-xl"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={async () => {
+                      try {
+                        setIsLoading(true);
+                        await resendEmailOtp({ email: pendingVerificationEmail });
+                        toast.success("OTP resent");
+                      } catch (error: any) {
+                        toast.error(error?.message || "Failed to resend OTP");
+                      } finally {
+                        setIsLoading(false);
+                      }
+                    }}
+                  >
+                    Resend OTP
+                  </Button>
+                </>
               ) : (
                 <>
                   {!isLogin && (
@@ -201,6 +222,17 @@ export default function Login() {
                     placeholder="Password"
                     className="w-full p-3 border rounded-xl"
                   />
+
+                  {!isLogin && (
+                    <select
+                      value={role}
+                      onChange={(e) => setRole(e.target.value as "patient" | "doctor")}
+                      className="w-full p-3 border rounded-xl bg-white"
+                    >
+                      <option value="patient">Sign up as Patient</option>
+                      <option value="doctor">Sign up as Doctor</option>
+                    </select>
+                  )}
                 </>
               )}
 

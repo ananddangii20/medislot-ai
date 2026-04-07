@@ -3,20 +3,25 @@ import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Heart, LogOut, UserCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { isAuthenticated, logout } from "@/utils/auth";
+import { getUserRole, isAuthenticated, logout } from "@/utils/auth";
 
-const navLinks = [
+const baseNavLinks = [
   { label: "Home", path: "/" },
   { label: "Doctors", path: "/doctors" },
   { label: "AI Checker", path: "/symptom-checker" },
-  { label: "Dashboard", path: "/patient-dashboard" },
 ];
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(isAuthenticated());
+  const [role, setRole] = useState(getUserRole() || "patient");
   const location = useLocation();
+
+  const navLinks = [
+    ...baseNavLinks,
+    { label: "Dashboard", path: role === "doctor" ? "/doctor-dashboard" : "/patient-dashboard" },
+  ];
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -27,7 +32,10 @@ export function Navbar() {
   useEffect(() => setMobileOpen(false), [location.pathname]);
 
   useEffect(() => {
-    const syncAuth = () => setLoggedIn(isAuthenticated());
+    const syncAuth = () => {
+      setLoggedIn(isAuthenticated());
+      setRole(getUserRole() || "patient");
+    };
     window.addEventListener("storage", syncAuth);
     window.addEventListener("auth-changed", syncAuth);
 
@@ -42,9 +50,8 @@ export function Navbar() {
       initial={{ y: -80 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? "glass nav-shadow" : "bg-background/60 backdrop-blur-sm"
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "glass nav-shadow" : "bg-background/60 backdrop-blur-sm"
+        }`}
     >
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2 group">
@@ -59,11 +66,10 @@ export function Navbar() {
             <Link
               key={link.path}
               to={link.path}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                location.pathname === link.path
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${location.pathname === link.path
                   ? "text-primary bg-primary/5"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
-              }`}
+                }`}
             >
               {link.label}
             </Link>
@@ -119,11 +125,10 @@ export function Navbar() {
                 <Link
                   key={link.path}
                   to={link.path}
-                  className={`px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                    location.pathname === link.path
+                  className={`px-4 py-3 rounded-xl text-sm font-medium transition-colors ${location.pathname === link.path
                       ? "text-primary bg-primary/5"
                       : "text-muted-foreground hover:bg-muted"
-                  }`}
+                    }`}
                 >
                   {link.label}
                 </Link>

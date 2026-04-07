@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Calendar, Clock, FileText, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -5,17 +6,71 @@ import { Navbar } from "@/components/Navbar";
 import { PageTransition } from "@/components/PageTransition";
 import { Link } from "react-router-dom";
 import { doctors } from "@/data/doctors";
+import { getPatientAppointments } from "@/api";
+import { toast } from "sonner";
 
-const upcomingAppointments = [
-  { doctor: doctors[0], date: "Apr 10, 2026", time: "10:00 AM", status: "Confirmed" },
-  { doctor: doctors[2], date: "Apr 14, 2026", time: "2:00 PM", status: "Pending" },
-];
-
-const pastAppointments = [
-  { doctor: doctors[5], date: "Mar 28, 2026", time: "11:30 AM", status: "Completed" },
-];
+type Appointment = {
+  id: string;
+  doctorName: string;
+  date: string;
+  time: string;
+  status: "pending" | "accepted" | "rejected";
+};
 
 export default function PatientDashboard() {
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadAppointments() {
+      try {
+        setLoading(true);
+        const data = await getPatientAppointments();
+        if (!isMounted) return;
+
+        const mapped: Appointment[] = (data.appointments || []).map((a: any) => ({
+          id: a.id,
+          doctorName: a.doctor_name,
+          date: new Date(a.date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          }),
+          time: a.time,
+          status: a.status,
+        }));
+
+        setAppointments(mapped);
+      } catch (error: any) {
+        toast.error(error?.message || "Failed to load appointments");
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    loadAppointments();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const upcomingAppointments = useMemo(
+    () => appointments.filter((a) => a.status === "pending" || a.status === "accepted"),
+    [appointments]
+  );
+  const pastAppointments = useMemo(
+    () => appointments.filter((a) => a.status === "rejected"),
+    [appointments]
+  );
+
+  const totalCount = appointments.length;
+  const upcomingCount = upcomingAppointments.length;
+  const completedCount = appointments.filter((a) => a.status === "accepted").length;
+
+  const findDoctor = (doctorName: string) => doctors.find((d) => d.name === doctorName);
+
   return (
     <>
       <Navbar />
@@ -37,9 +92,9 @@ export default function PatientDashboard() {
             {/* Quick actions */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
               {[
-                { icon: Calendar, label: "Appointments", value: "3", color: "text-primary" },
-                { icon: Clock, label: "Upcoming", value: "2", color: "text-amber-500" },
-                { icon: FileText, label: "Completed", value: "1", color: "text-green-500" },
+                { icon: Calendar, label: "Appointments", value: String(totalCount), color: "text-primary" },
+                { icon: Clock, label: "Upcoming", value: String(upcomingCount), color: "text-amber-500" },
+                { icon: FileText, label: "Accepted", value: String(completedCount), color: "text-green-500" },
                 { icon: Plus, label: "Book New", value: "→", color: "text-primary" },
               ].map((item) => (
                 <motion.div
@@ -58,28 +113,31 @@ export default function PatientDashboard() {
             {/* Upcoming */}
             <div className="mb-10">
               <h2 className="font-heading font-semibold text-lg mb-4">Upcoming Appointments</h2>
+              {loading && <p className="text-sm text-muted-foreground">Loading appointments...</p>}
+              {!loading && upcomingAppointments.length === 0 && (
+                <p className="text-sm text-muted-foreground">No upcoming appointments found.</p>
+              )}
               <div className="space-y-3">
                 {upcomingAppointments.map((appt, i) => (
                   <motion.div
-                    key={i}
+                    key={appt.id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.1 }}
                     className="flex items-center gap-4 p-4 rounded-2xl border border-border bg-card"
                   >
-                    <img src={appt.doctor.image} alt="" className="w-12 h-12 rounded-xl object-cover" />
+                    <img src={findDoctor(appt.doctorName)?.image || doctors[0].image} alt="" className="w-12 h-12 rounded-xl object-cover" />
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-heading font-semibold text-sm truncate">{appt.doctor.name}</h3>
-                      <p className="text-xs text-muted-foreground">{appt.doctor.specialization}</p>
+                      <h3 className="font-heading font-semibold text-sm truncate">{appt.doctorName}</h3>
+                      <p className="text-xs text-muted-foreground">{findDoctor(appt.doctorName)?.specialization || "Specialist"}</p>
                     </div>
                     <div className="text-right hidden sm:block">
                       <p className="text-xs font-medium">{appt.date}</p>
                       <p className="text-xs text-muted-foreground">{appt.time}</p>
                     </div>
-                    <span className={`text-xs font-medium px-3 py-1 rounded-full ${
-                      appt.status === "Confirmed" ? "bg-green-50 text-green-600" : "bg-amber-50 text-amber-600"
-                    }`}>
-                      {appt.status}
+                    <span className={`text-xs font-medium px-3 py-1 rounded-full ${appt.status === "accepted" ? "bg-green-50 text-green-600" : "bg-amber-50 text-amber-600"
+                      }`}>
+                      {appt.status === "accepted" ? "Accepted" : "Pending"}
                     </span>
                   </motion.div>
                 ))}
@@ -88,21 +146,24 @@ export default function PatientDashboard() {
 
             {/* Past */}
             <div>
-              <h2 className="font-heading font-semibold text-lg mb-4">Booking History</h2>
+              <h2 className="font-heading font-semibold text-lg mb-4">Rejected Requests</h2>
+              {!loading && pastAppointments.length === 0 && (
+                <p className="text-sm text-muted-foreground">No rejected requests.</p>
+              )}
               <div className="space-y-3">
                 {pastAppointments.map((appt, i) => (
-                  <div key={i} className="flex items-center gap-4 p-4 rounded-2xl border border-border bg-card opacity-70">
-                    <img src={appt.doctor.image} alt="" className="w-12 h-12 rounded-xl object-cover" />
+                  <div key={appt.id} className="flex items-center gap-4 p-4 rounded-2xl border border-border bg-card opacity-70">
+                    <img src={findDoctor(appt.doctorName)?.image || doctors[0].image} alt="" className="w-12 h-12 rounded-xl object-cover" />
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-heading font-semibold text-sm truncate">{appt.doctor.name}</h3>
-                      <p className="text-xs text-muted-foreground">{appt.doctor.specialization}</p>
+                      <h3 className="font-heading font-semibold text-sm truncate">{appt.doctorName}</h3>
+                      <p className="text-xs text-muted-foreground">{findDoctor(appt.doctorName)?.specialization || "Specialist"}</p>
                     </div>
                     <div className="text-right hidden sm:block">
                       <p className="text-xs font-medium">{appt.date}</p>
                       <p className="text-xs text-muted-foreground">{appt.time}</p>
                     </div>
                     <span className="text-xs font-medium px-3 py-1 rounded-full bg-muted text-muted-foreground">
-                      {appt.status}
+                      Rejected
                     </span>
                   </div>
                 ))}
