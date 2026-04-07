@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from bson import ObjectId
 from app.schemas import (
@@ -12,16 +12,23 @@ from app.schemas import (
     AppointmentStatusUpdate,
     DoctorFeeUpdate,
     DoctorProfileUpdate,
+    AppointmentPayment,
 )
 from app.db import users_collection, appointments_collection
 from app.auth.utils import hash_password, verify_password, create_token
 from app.auth.email import generate_otp, send_otp_email
 from jose import jwt
 import os
+from pathlib import Path
+from uuid import uuid4
+import shutil
 
 router = APIRouter()
 security = HTTPBearer()
 SECRET = os.getenv("JWT_SECRET")
+BASE_DIR = Path(__file__).resolve().parents[2]
+DOCTOR_UPLOAD_DIR = BASE_DIR / "uploads" / "doctor_profiles"
+DOCTOR_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def serialize_appointment(item: dict) -> dict:
@@ -37,6 +44,8 @@ def serialize_appointment(item: dict) -> dict:
         "status": item["status"],
         "appointment_charge": item.get("appointment_charge"),
         "payment_status": item.get("payment_status", "not_required"),
+        "payment_method": item.get("payment_method"),
+        "payment_reference": item.get("payment_reference"),
         "paid_at": item.get("paid_at"),
         "created_at": item.get("created_at"),
     }
@@ -52,6 +61,8 @@ def serialize_doctor(item: dict) -> dict:
         "bio": item.get("bio", "Experienced Indian healthcare professional available for online consultation."),
         "consultation_fee": item.get("consultation_fee", 1000),
         "image": item.get("image", ""),
+        "location": item.get("location", "Mumbai"),
+        "hospital_or_clinic": item.get("hospital_or_clinic", "City Care Clinic"),
     }
 
 
@@ -128,6 +139,8 @@ async def signup(user: UserSignup):
         "experience": 5 if user.role == "doctor" else None,
         "bio": "Experienced Indian healthcare professional available for online consultation." if user.role == "doctor" else None,
         "image": "" if user.role == "doctor" else None,
+        "location": "Mumbai" if user.role == "doctor" else None,
+        "hospital_or_clinic": "City Care Clinic" if user.role == "doctor" else None,
     })
 
     try:
@@ -311,11 +324,43 @@ async def update_doctor_profile(
                 "experience": payload.experience,
                 "bio": payload.bio.strip(),
                 "image": payload.image.strip(),
+                "location": payload.location.strip(),
+                "hospital_or_clinic": payload.hospital_or_clinic.strip(),
             }
         },
     )
 
     return {"message": "Doctor profile updated successfully"}
+
+
+@router.post("/doctor/profile-image")
+async def upload_doctor_profile_image(
+    image: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
+    await require_role("doctor", current_user)
+
+    if not image.content_type or not image.content_type.startswith("image/"):
+        raise HTTPException(400, "Only image files are allowed")
+
+    extension = Path(image.filename or "").suffix.lower()
+    if extension not in {".jpg", ".jpeg", ".png", ".webp"}:
+        raise HTTPException(400, "Allowed formats: .jpg, .jpeg, .png, .webp")
+
+    filename = f"{current_user['_id']}_{uuid4().hex}{extension}"
+    file_path = DOCTOR_UPLOAD_DIR / filename
+
+    with file_path.open("wb") as buffer:
+        shutil.copyfileobj(image.file, buffer)
+
+    image_url = f"/uploads/doctor_profiles/{filename}"
+
+    await users_collection.update_one(
+        {"_id": current_user["_id"]},
+        {"$set": {"image": image_url}},
+    )
+
+    return {"message": "Profile image uploaded", "image": image_url}
 
 
 @router.post("/appointments")
@@ -349,6 +394,8 @@ async def create_appointment(
         "status": "pending",
         "appointment_charge": None,
         "payment_status": "not_required",
+        "payment_method": None,
+        "payment_reference": None,
         "paid_at": None,
         "created_at": datetime.now(timezone.utc),
     }
@@ -423,6 +470,8 @@ async def update_appointment_status(
     else:
         update_fields["appointment_charge"] = None
         update_fields["payment_status"] = "not_required"
+        update_fields["payment_method"] = None
+        update_fields["payment_reference"] = None
         update_fields["paid_at"] = None
 
     await appointments_collection.update_one(
@@ -437,6 +486,7 @@ async def update_appointment_status(
 @router.post("/appointments/{appointment_id}/pay")
 async def pay_appointment_charge(
     appointment_id: str,
+    payload: AppointmentPayment,
     current_user: dict = Depends(get_current_user),
 ):
     await require_role("patient", current_user)
@@ -464,6 +514,8 @@ async def pay_appointment_charge(
         {
             "$set": {
                 "payment_status": "paid",
+                "payment_method": payload.payment_method,
+                "payment_reference": payload.payment_reference,
                 "paid_at": datetime.now(timezone.utc),
             }
         },

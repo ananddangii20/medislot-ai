@@ -55,8 +55,8 @@ export default function Doctors() {
                       key={s}
                       onClick={() => setActiveSpec(s)}
                       className={`w-full text-left px-4 py-2.5 rounded-xl text-sm transition-colors ${activeSpec === s
-                          ? "bg-primary text-primary-foreground font-medium"
-                          : "text-muted-foreground hover:bg-muted"
+                        ? "bg-primary text-primary-foreground font-medium"
+                        : "text-muted-foreground hover:bg-muted"
                         }`}
                     >
                       {s}
@@ -89,6 +89,7 @@ export default function Doctors() {
                               <div className="min-w-0">
                                 <h3 className="font-heading font-semibold truncate">{doc.name}</h3>
                                 <p className="text-sm text-muted-foreground">{doc.specialization}</p>
+                                <p className="text-xs text-muted-foreground truncate">{doc.hospital_or_clinic}, {doc.location}</p>
                                 <div className="flex items-center gap-2 mt-1">
                                   <Star className="w-3.5 h-3.5 text-amber-400" fill="currentColor" />
                                   <span className="text-xs font-medium">{doc.rating}</span>

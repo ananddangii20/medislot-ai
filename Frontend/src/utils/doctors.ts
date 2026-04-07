@@ -10,12 +10,16 @@ export interface AccountDoctor {
     bio?: string;
     consultation_fee?: number;
     image?: string;
+    location?: string;
+    hospital_or_clinic?: string;
 }
 
 export type UnifiedDoctor = Doctor & {
     source: "demo" | "account";
     email?: string;
 };
+
+const API_BASE_URL = "http://127.0.0.1:8000";
 
 const fallbackDoctorImages = [
     "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=300&h=300&fit=crop&crop=face",
@@ -27,14 +31,18 @@ const fallbackDoctorImages = [
 ];
 
 function mapAccountDoctor(doc: AccountDoctor, index: number): UnifiedDoctor {
+    const imageUrl = doc.image?.startsWith("/uploads") ? `${API_BASE_URL}${doc.image}` : doc.image;
+
     return {
         id: doc.id,
         name: doc.name,
         specialization: doc.specialization || "General Physician",
+        location: doc.location || "Mumbai",
+        hospital_or_clinic: doc.hospital_or_clinic || "City Care Clinic",
         experience: doc.experience || 5,
         rating: 4.8,
         reviews: 0,
-        image: doc.image || fallbackDoctorImages[index % fallbackDoctorImages.length],
+        image: imageUrl || fallbackDoctorImages[index % fallbackDoctorImages.length],
         bio: doc.bio || "Experienced Indian healthcare professional available for online consultation.",
         available: true,
         fee: doc.consultation_fee || 1000,

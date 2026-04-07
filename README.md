@@ -1,248 +1,155 @@
-# 🏥 MediSlot AI
+# MediSlot 
 
-### Smart Healthcare Appointment System with AI
+MediSlot is a healthcare appointment platform for Indian patients and doctors. It combines doctor discovery, appointment booking, doctor approvals, payment handling, and a symptom checker that suggests the right specialist and next steps.
 
-🚀 **MediSlot AI** is a modern, AI-powered healthcare platform that allows patients to seamlessly book doctor appointments while enabling doctors to manage their availability efficiently.
+## What this project does
 
-It also includes a **basic AI symptom checker** to assist users before consulting a doctor.
+- Patients can browse doctors, view profiles, and request appointments.
+- Doctors can manage their own dashboard, update profile details, set consultation fees, and accept or reject requests.
+- After a doctor accepts an appointment, the patient can complete a mock payment flow from the dashboard.
+- The symptom checker gives simple medical suggestions, possible specialist recommendations, and basic self-care guidance.
 
----
+## Main features
 
-## 🎯 Project Overview
+### Patient portal
 
-This platform simplifies the healthcare booking experience by providing:
+- Sign up, log in, and manage profile details.
+- Browse doctors with location, clinic/hospital, fee, and profile photo.
+- Request an appointment with a preferred doctor and time slot.
+- See appointment status: pending, accepted, rejected, and paid.
+- Pay accepted appointments through a realistic checkout flow.
 
-* 🧑‍⚕️ Easy doctor discovery & booking
-* 📅 Real-time appointment scheduling
-* 🤖 AI-powered symptom suggestions (non-diagnostic)
-* 📊 Separate dashboards for doctors & patients
+### Doctor portal
 
----
+- Dashboard-based experience focused on the tasks doctors actually need.
+- Update profile name, photo, specialization, experience, location, clinic/hospital, and bio.
+- Set consultation fee in INR.
+- Review incoming appointment requests and accept or reject them.
+- Track paid and pending appointments.
 
-## ✨ Key Features
+### Symptom checker
 
-### 👤 Patient Features
+- Enter symptoms in natural language.
+- Get a conversational response from the AI assistant.
+- See suggested questions, likely specialist type, home-care guidance, and warning signs.
 
-* Signup / Login authentication
-* Search doctors by specialization
-* View doctor profiles
-* Book appointments
-* View booking history
+## Tech stack
 
----
+- Frontend: React, TypeScript, Vite, Tailwind CSS, Framer Motion
+- Backend: FastAPI, Python, Pydantic, Uvicorn
+- Database: MongoDB
+- AI: Groq-powered chat service
 
-### 👨‍⚕️ Doctor Features
+## Project structure
 
-* Secure login
-* Set availability (time slots)
-* Accept / Reject appointments
-* Manage appointments via dashboard
+```text
+medislot-ai/
+├── Backend/
+│   ├── app/
+│   │   ├── auth/
+│   │   ├── chatbot/
+│   │   ├── db.py
+│   │   ├── main.py
+│   │   ├── models.py
+│   │   └── schemas.py
+├── Frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── data/
+│   │   ├── hooks/
+│   │   ├── pages/
+│   │   ├── utils/
+│   │   └── api.ts
+```
 
----
+## Running the project locally
 
-### 🤖 AI Symptom Checker
-
-* Users input symptoms (text)
-* AI suggests possible conditions
-* Provides basic guidance
-
-⚠️ **Disclaimer:**
-
-> This is not medical advice. Please consult a qualified doctor.
-
----
-
-## 🎨 Frontend Highlights
-
-* 🔴 Premium Red & White Theme
-* ⚡ Smooth animations (Framer Motion)
-* 🧊 Glassmorphism + soft shadows
-* 📱 Fully responsive design
-* ✨ Micro-interactions & transitions
-* ⏳ Skeleton loading states
-
----
-
-## 🧩 Pages
-
-* Splash Screen
-* Home Page
-* Doctor Listing
-* Doctor Profile
-* Booking Page
-* Login / Register
-* Patient Dashboard
-* Doctor Dashboard
-* AI Symptom Checker
-
----
-
-## 🏗️ System Architecture
-
-Frontend (React + Vercel)
-⬇️
-Backend (FastAPI - Python)
-⬇️
-Database (MongoDB Atlas)
-⬇️
-AI API (Gemini / OpenAI)
-
----
-
-## ⚙️ Tech Stack
-
-### 🌐 Frontend
-
-* React.js
-* Tailwind CSS
-* Framer Motion
-
-### ⚙️ Backend
-
-* FastAPI (Python)
-* Pydantic (data validation)
-* Uvicorn (ASGI server)
-
-### 🗄️ Database
-
-* MongoDB Atlas
-
-### 🤖 AI Integration
-
-* Gemini API / OpenAI API
-
-### ☁️ Deployment
-
-* Vercel (Frontend)
-* Render (Backend)
-
----
-
-## 📦 Installation & Setup
-
-### 1️⃣ Clone Repository
+### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/medislot-ai.git
+git clone <your-repository-url>
 cd medislot-ai
 ```
 
----
+### 2. Backend setup
 
-## 🧠 Backend Setup (FastAPI)
-
-### 2️⃣ Create Virtual Environment
+Create and activate a virtual environment:
 
 ```bash
-python -m venv venv
-source venv/bin/activate   # Mac/Linux
-venv\Scripts\activate      # Windows
+python -m venv .venv
+.venv\Scripts\activate
 ```
 
-### 3️⃣ Install Dependencies
+Install backend dependencies. If you do not already have a requirements file, install the main packages manually:
 
 ```bash
-pip install -r requirements.txt
+pip install fastapi uvicorn motor python-dotenv python-jose[cryptography] passlib[bcrypt] groq python-multipart
 ```
 
-### 4️⃣ Run FastAPI Server
+Run the backend:
 
 ```bash
-uvicorn main:app --reload
+cd Backend
+uvicorn app.main:app --reload
 ```
 
-👉 Server runs on: `http://127.0.0.1:8000`
+The backend usually runs at:
 
----
+```text
+http://127.0.0.1:8000
+```
 
-## 🌐 Frontend Setup
+### 3. Frontend setup
+
+Install dependencies and start the dev server:
 
 ```bash
-cd frontend
+cd Frontend
 npm install
 npm run dev
 ```
 
----
+The frontend usually runs at:
 
-## 🔐 Environment Variables
-
-Create `.env` file in backend:
-
-```env
-MONGO_URI=your_mongodb_uri
-SECRET_KEY=your_secret_key
-AI_API_KEY=your_api_key
+```text
+http://127.0.0.1:5173
 ```
 
----
+## Environment variables
 
-## 📡 API Overview
+Create a `.env` file inside `Backend/` with the values your backend needs.
 
-### Auth Routes
+Example:
 
-* `POST /signup`
-* `POST /login`
+```env
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_secret_key
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=llama-3.3-70b-versatile
+```
 
-### Doctor Routes
+If you use email OTP login, also add the sender credentials required by the backend.
 
-* `GET /doctors`
-* `GET /doctor/{id}`
+## Important routes in the app
 
-### Appointment Routes
+- `/home` - landing page
+- `/doctors` - doctor listing
+- `/doctor/:id` - doctor profile
+- `/booking/:id` - appointment booking
+- `/patient-dashboard` - patient portal
+- `/doctor-dashboard` - doctor portal
+- `/symptom-checker` - AI symptom checker
 
-* `POST /appointments`
-* `GET /appointments/{user_id}`
+## Notes
 
-### AI Route
+- Doctor images are uploaded from file input and served from the backend uploads folder.
+- The payment flow is a realistic mock checkout, not a live payment gateway.
+- The symptom checker is for guidance only and should not be treated as a diagnosis.
 
-* `POST /ai/symptoms`
+## Current status
 
----
+This project is actively evolving. The core patient and doctor workflows are already wired, and the UI has been tuned for mobile and desktop use.
 
-## 🚀 Deployment
+## License
 
-* Backend deployed on **Render (FastAPI)**
-* Frontend deployed on **Vercel**
-* MongoDB Atlas used for cloud database
-
----
-
-## 🧠 Future Enhancements
-
-* ⭐ Doctor ratings & reviews
-* 📅 Advanced calendar UI
-* 🔔 Email/SMS notifications
-* 💬 Chat with doctor
-* 📱 Mobile app
-
----
-
-## 🏆 Hackathon Value
-
-* Real-world healthcare solution
-* AI integration
-* Clean UI/UX + animations
-* Scalable backend with FastAPI
-
----
-
-## 👨‍💻 Author
-
-**Anand Dangi**
-**Mahika Chaurasiya**
-**kalp Doshi**
-**Gautam Gupta**
-
-
----
-
-## 📄 License
-
-MIT License
-
----
-
-## ⭐ Support
-
-If you like this project, give it a ⭐ on GitHub!
+MIT

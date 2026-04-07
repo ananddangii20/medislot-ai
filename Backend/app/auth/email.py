@@ -24,8 +24,8 @@ def send_otp_email(recipient_email: str, otp: str) -> None:
     message["From"] = sender_email
     message["To"] = recipient_email
     message.set_content(
-        f"Your MediSlot verification OTP is {otp}. It will expire in 10 minutes."
-    )
+    f"Dear User,\n\nYour MediSlot account verification code is {otp}. This OTP is valid for the next 10 minutes.\n\nFor your security, please do not share this code with anyone.\n\nRegards,\nMediSlot Team"
+)
 
     try:
         if smtp_port == 465:

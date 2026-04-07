@@ -76,7 +76,7 @@ export default function Home() {
         <main className="pt-16">
           {/* Hero */}
           <section className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-hero-gradient opacity-[0.03]" />
+            <div className="absolute inset-0 bg-hero-gradient opacity-[0.03] pointer-events-none" />
             <div className="container py-20 md:py-28">
               <div className="grid md:grid-cols-2 gap-12 items-center">
                 <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
@@ -87,27 +87,23 @@ export default function Home() {
                   )}
                   <motion.div variants={fadeUp}>
                     <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                      <Activity className="w-3.5 h-3.5" /> AI-Powered Healthcare
+                      <Activity className="w-3.5 h-3.5" /> MediSlot AI Care Platform
                     </span>
                   </motion.div>
                   <motion.h1 variants={fadeUp} className="font-heading font-bold text-4xl md:text-5xl lg:text-6xl leading-tight tracking-tight">
-                    Book Doctors<br />
-                    <span className="text-gradient">Instantly</span>
+                    Healthcare Booking<br />
+                    <span className="text-gradient">Made Simple</span>
                   </motion.h1>
                   <motion.p variants={fadeUp} className="text-muted-foreground text-lg max-w-md leading-relaxed">
-                    Find top-rated doctors across India, check symptoms with AI, and book appointments in seconds.
+                    Discover trusted doctors, request appointments, and manage approvals and payments in one seamless patient journey.
                   </motion.p>
                   <motion.div variants={fadeUp} className="flex flex-wrap gap-3">
-                    <Link to="/doctors">
-                      <Button size="lg" className="rounded-xl gap-2 text-sm">
-                        <Calendar className="w-4 h-4" /> Book Appointment
-                      </Button>
-                    </Link>
-                    <Link to="/symptom-checker">
-                      <Button variant="outline" size="lg" className="rounded-xl gap-2 text-sm">
-                        <Brain className="w-4 h-4" /> Check Symptoms
-                      </Button>
-                    </Link>
+                    <Button size="lg" className="rounded-xl gap-2 text-sm" onClick={() => navigate("/doctors")}>
+                      <Calendar className="w-4 h-4" /> Book Appointment
+                    </Button>
+                    <Button variant="outline" size="lg" className="rounded-xl gap-2 text-sm" onClick={() => navigate("/symptom-checker")}>
+                      <Brain className="w-4 h-4" /> Check Symptoms
+                    </Button>
                   </motion.div>
                   <motion.div variants={fadeUp} className="flex items-center gap-6 pt-2">
                     <div className="text-center">
@@ -134,7 +130,7 @@ export default function Home() {
                 >
                   <div className="w-full aspect-square rounded-3xl bg-hero-gradient opacity-10 absolute -right-8 -top-8" />
                   <img
-                    src="https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=600&h=600&fit=crop"
+                    src="homepage.jpg"
                     alt="Healthcare professional"
                     className="relative rounded-3xl card-shadow w-full max-w-md ml-auto object-cover aspect-[4/5]"
                   />
@@ -166,7 +162,7 @@ export default function Home() {
             </motion.div>
           </section>
 
-          {/* Featured Doctors */}
+          {/* Fe */}
           <section className="container pb-20">
             <motion.div
               variants={stagger}
@@ -178,14 +174,14 @@ export default function Home() {
               <motion.div variants={fadeUp} className="flex items-end justify-between">
                 <div>
                   <h2 className="font-heading font-bold text-2xl md:text-3xl">Featured Doctors</h2>
-                  <p className="text-muted-foreground text-sm mt-1">Top-rated specialists for Indian patients</p>
+                  <p className="text-muted-foreground text-sm mt-1">Verified specialists available for online and clinic consultations</p>
                 </div>
                 <Link to="/doctors" className="text-primary text-sm font-medium hover:underline hidden sm:block">
                   View all →
                 </Link>
               </motion.div>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {doctors.slice(0, 3).map((doc) => (
+                {doctors.slice(0, 6).map((doc) => (
                   <motion.div key={doc.id} variants={fadeUp}>
                     <div className="group rounded-2xl border border-border bg-card p-5 transition-all duration-300 hover:card-shadow-hover hover:-translate-y-1">
                       <div className="flex items-center gap-4 mb-4">
@@ -230,13 +226,13 @@ export default function Home() {
               >
                 <motion.div variants={fadeUp} className="text-center">
                   <h2 className="font-heading font-bold text-2xl md:text-3xl">How It Works</h2>
-                  <p className="text-muted-foreground text-sm mt-2">Three simple steps to better healthcare</p>
+                  <p className="text-muted-foreground text-sm mt-2">Simple, reliable flow designed for real clinic operations</p>
                 </motion.div>
                 <div className="grid md:grid-cols-3 gap-8">
                   {[
-                    { icon: Search, title: "Search", desc: "Find doctors by specialization or name" },
-                    { icon: Calendar, title: "Book", desc: "Choose a convenient time slot" },
-                    { icon: CheckCircle, title: "Visit", desc: "Get expert medical care" },
+                    { icon: Search, title: "Discover", desc: "Browse doctors by speciality, city, and clinic" },
+                    { icon: Calendar, title: "Request", desc: "Send appointment request and wait for doctor approval" },
+                    { icon: CheckCircle, title: "Consult", desc: "Pay securely and attend your confirmed consultation" },
                   ].map((step, i) => (
                     <motion.div key={step.title} variants={fadeUp} className="text-center space-y-4">
                       <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
@@ -266,16 +262,14 @@ export default function Home() {
                   <span className="text-primary-foreground/80 text-sm font-medium">AI-Powered</span>
                 </div>
                 <h2 className="font-heading font-bold text-2xl md:text-3xl text-primary-foreground mb-3">
-                  Not sure what's wrong?
+                  Need help choosing a specialist?
                 </h2>
                 <p className="text-primary-foreground/80 text-sm mb-6 leading-relaxed">
-                  Our AI symptom checker analyzes your symptoms and suggests the right specialist. Fast, private, and free.
+                  Use the MediSlot AI symptom checker to understand symptoms early and connect with the right doctor faster.
                 </p>
-                <Link to="/symptom-checker">
-                  <Button size="lg" variant="secondary" className="rounded-xl gap-2 text-sm">
-                    <Brain className="w-4 h-4" /> Try AI Checker
-                  </Button>
-                </Link>
+                <Button size="lg" variant="secondary" className="rounded-xl gap-2 text-sm" onClick={() => navigate("/symptom-checker")}>
+                  <Brain className="w-4 h-4" /> Try AI Checker
+                </Button>
               </div>
             </motion.div>
           </section>

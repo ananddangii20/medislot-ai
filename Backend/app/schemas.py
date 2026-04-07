@@ -48,3 +48,10 @@ class DoctorProfileUpdate(BaseModel):
     experience: int = Field(ge=0)
     bio: str
     image: str
+    location: str
+    hospital_or_clinic: str
+
+
+class AppointmentPayment(BaseModel):
+    payment_method: Literal["upi", "card", "netbanking"]
+    payment_reference: str

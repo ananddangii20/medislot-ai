@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, Clock, FileText, Plus } from "lucide-react";
+import { Calendar, Clock, FileText, Plus, CreditCard, Landmark, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
 import { PageTransition } from "@/components/PageTransition";
@@ -19,11 +19,21 @@ type Appointment = {
   paymentStatus: "not_required" | "pending" | "paid";
 };
 
+type PaymentMethod = "upi" | "card" | "netbanking";
+
 export default function PatientDashboard() {
   const { doctors } = useDoctors();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [payingId, setPayingId] = useState<string | null>(null);
+  const [checkoutAppointment, setCheckoutAppointment] = useState<Appointment | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("upi");
+  const [upiId, setUpiId] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardName, setCardName] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
+  const [bankName, setBankName] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -77,12 +87,68 @@ export default function PatientDashboard() {
 
   const findDoctor = (doctorName: string) => doctors.find((d) => d.name === doctorName);
 
+  const openCheckout = (appointment: Appointment) => {
+    setCheckoutAppointment(appointment);
+    setPaymentMethod("upi");
+    setUpiId("");
+    setCardNumber("");
+    setCardName("");
+    setCardExpiry("");
+    setCardCvv("");
+    setBankName("");
+  };
+
   const handlePay = async (appointmentId: string) => {
+    if (!checkoutAppointment) return;
+
+    let paymentReference = "";
+    if (paymentMethod === "upi") {
+      if (!upiId.includes("@")) {
+        toast.error("Enter a valid UPI ID");
+        return;
+      }
+      paymentReference = upiId.trim();
+    }
+
+    if (paymentMethod === "card") {
+      const digits = cardNumber.replace(/\D/g, "");
+      if (digits.length < 12) {
+        toast.error("Enter a valid card number");
+        return;
+      }
+      if (!cardName.trim()) {
+        toast.error("Enter card holder name");
+        return;
+      }
+      if (!/^\d{2}\/\d{2}$/.test(cardExpiry.trim())) {
+        toast.error("Use expiry format MM/YY");
+        return;
+      }
+      if (!/^\d{3,4}$/.test(cardCvv.trim())) {
+        toast.error("Enter valid CVV");
+        return;
+      }
+      paymentReference = `CARD-XXXX-${digits.slice(-4)}`;
+    }
+
+    if (paymentMethod === "netbanking") {
+      if (!bankName.trim()) {
+        toast.error("Enter bank name");
+        return;
+      }
+      paymentReference = `NB-${bankName.trim().toUpperCase()}`;
+    }
+
     try {
       setPayingId(appointmentId);
-      await payAppointmentCharge(appointmentId);
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await payAppointmentCharge(appointmentId, {
+        payment_method: paymentMethod,
+        payment_reference: paymentReference,
+      });
       setAppointments((prev) => prev.map((a) => (a.id === appointmentId ? { ...a, paymentStatus: "paid" } : a)));
       toast.success("Payment completed successfully");
+      setCheckoutAppointment(null);
     } catch (error: any) {
       toast.error(error?.message || "Failed to complete payment");
     } finally {
@@ -168,9 +234,9 @@ export default function PatientDashboard() {
                             size="sm"
                             className="rounded-lg h-7 text-[11px]"
                             disabled={payingId === appt.id}
-                            onClick={() => handlePay(appt.id)}
+                            onClick={() => openCheckout(appt)}
                           >
-                            {payingId === appt.id ? "Paying..." : "Pay Now"}
+                            Pay Now
                           </Button>
                         )}
                       </div>
@@ -206,6 +272,99 @@ export default function PatientDashboard() {
               </div>
             </div>
           </div>
+
+          {checkoutAppointment && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+              <div className="w-full max-w-md rounded-2xl bg-white p-5 border border-border">
+                <h3 className="font-heading font-bold text-lg">Complete Payment</h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {checkoutAppointment.doctorName} · INR {checkoutAppointment.appointmentCharge}
+                </p>
+
+                <div className="grid grid-cols-3 gap-2 mt-4">
+                  <button
+                    onClick={() => setPaymentMethod("upi")}
+                    className={`rounded-lg border px-2 py-2 text-xs flex items-center justify-center gap-1 ${paymentMethod === "upi" ? "border-primary text-primary" : "border-border"}`}
+                  >
+                    <Smartphone className="w-3.5 h-3.5" /> UPI
+                  </button>
+                  <button
+                    onClick={() => setPaymentMethod("card")}
+                    className={`rounded-lg border px-2 py-2 text-xs flex items-center justify-center gap-1 ${paymentMethod === "card" ? "border-primary text-primary" : "border-border"}`}
+                  >
+                    <CreditCard className="w-3.5 h-3.5" /> Card
+                  </button>
+                  <button
+                    onClick={() => setPaymentMethod("netbanking")}
+                    className={`rounded-lg border px-2 py-2 text-xs flex items-center justify-center gap-1 ${paymentMethod === "netbanking" ? "border-primary text-primary" : "border-border"}`}
+                  >
+                    <Landmark className="w-3.5 h-3.5" /> NetBanking
+                  </button>
+                </div>
+
+                {paymentMethod === "upi" && (
+                  <input
+                    value={upiId}
+                    onChange={(e) => setUpiId(e.target.value)}
+                    placeholder="Enter UPI ID (example@upi)"
+                    className="w-full mt-4 rounded-xl border border-border px-3 py-2 text-sm"
+                  />
+                )}
+
+                {paymentMethod === "card" && (
+                  <div className="mt-4 space-y-2">
+                    <input
+                      value={cardNumber}
+                      onChange={(e) => setCardNumber(e.target.value)}
+                      placeholder="Card Number"
+                      className="w-full rounded-xl border border-border px-3 py-2 text-sm"
+                    />
+                    <input
+                      value={cardName}
+                      onChange={(e) => setCardName(e.target.value)}
+                      placeholder="Card Holder Name"
+                      className="w-full rounded-xl border border-border px-3 py-2 text-sm"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        value={cardExpiry}
+                        onChange={(e) => setCardExpiry(e.target.value)}
+                        placeholder="MM/YY"
+                        className="w-full rounded-xl border border-border px-3 py-2 text-sm"
+                      />
+                      <input
+                        value={cardCvv}
+                        onChange={(e) => setCardCvv(e.target.value)}
+                        placeholder="CVV"
+                        className="w-full rounded-xl border border-border px-3 py-2 text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {paymentMethod === "netbanking" && (
+                  <input
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    placeholder="Enter Bank Name"
+                    className="w-full mt-4 rounded-xl border border-border px-3 py-2 text-sm"
+                  />
+                )}
+
+                <div className="flex justify-end gap-2 mt-5">
+                  <Button variant="outline" onClick={() => setCheckoutAppointment(null)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => handlePay(checkoutAppointment.id)}
+                    disabled={payingId === checkoutAppointment.id}
+                  >
+                    {payingId === checkoutAppointment.id ? "Processing..." : `Pay INR ${checkoutAppointment.appointmentCharge}`}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </main>
       </PageTransition>
     </>

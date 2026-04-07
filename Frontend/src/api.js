@@ -118,8 +118,31 @@ export function updateDoctorProfile(payload) {
   });
 }
 
-export function payAppointmentCharge(appointmentId) {
+export async function uploadDoctorProfileImage(file) {
+  const token = localStorage.getItem("medislot_token");
+  const formData = new FormData();
+  formData.append("image", file);
+
+  const res = await fetch(`${API_BASE_URL}/auth/doctor/profile-image`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(data?.detail || "Image upload failed.");
+  }
+
+  return data;
+}
+
+export function payAppointmentCharge(appointmentId, payload) {
   return authedRequest(`/auth/appointments/${appointmentId}/pay`, {
     method: "POST",
+    body: JSON.stringify(payload),
   });
 }

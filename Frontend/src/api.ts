@@ -121,6 +121,8 @@ export function updateDoctorProfile(payload: {
   experience: number;
   bio: string;
   image: string;
+  location: string;
+  hospital_or_clinic: string;
 }) {
   return authedRequest("/auth/doctor/profile", {
     method: "PUT",
@@ -128,8 +130,34 @@ export function updateDoctorProfile(payload: {
   });
 }
 
-export function payAppointmentCharge(appointmentId: string) {
+export async function uploadDoctorProfileImage(file: File) {
+  const token = localStorage.getItem("medislot_token");
+  const formData = new FormData();
+  formData.append("image", file);
+
+  const res = await fetch(`${API_BASE_URL}/auth/doctor/profile-image`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(data?.detail || "Image upload failed.");
+  }
+
+  return data;
+}
+
+export function payAppointmentCharge(
+  appointmentId: string,
+  payload: { payment_method: "upi" | "card" | "netbanking"; payment_reference: string }
+) {
   return authedRequest(`/auth/appointments/${appointmentId}/pay`, {
     method: "POST",
+    body: JSON.stringify(payload),
   });
 }

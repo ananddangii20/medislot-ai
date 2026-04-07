@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Heart, LogOut, UserCircle2 } from "lucide-react";
+import { Menu, X, Heart, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getUserRole, isAuthenticated, logout } from "@/utils/auth";
 
@@ -18,10 +18,14 @@ export function Navbar() {
   const [role, setRole] = useState(getUserRole() || "patient");
   const location = useLocation();
 
-  const navLinks = [
-    ...baseNavLinks,
-    { label: "Dashboard", path: role === "doctor" ? "/doctor-dashboard" : "/patient-dashboard" },
-  ];
+  const navLinks = loggedIn && role === "doctor"
+    ? [{ label: "Dashboard", path: "/doctor-dashboard" }]
+    : [
+      ...baseNavLinks,
+      { label: "Dashboard", path: role === "doctor" ? "/doctor-dashboard" : "/patient-dashboard" },
+    ];
+
+  const logoTarget = loggedIn && role === "doctor" ? "/doctor-dashboard" : "/home";
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -54,11 +58,11 @@ export function Navbar() {
         }`}
     >
       <div className="container flex h-16 items-center justify-between">
-        <Link to="/home" className="flex items-center gap-2 group">
+        <Link to={logoTarget} className="flex items-center gap-2 group">
           <div className="w-9 h-9 rounded-xl bg-hero-gradient flex items-center justify-center">
             <Heart className="w-5 h-5 text-primary-foreground" fill="currentColor" />
           </div>
-          <span className="font-heading font-bold text-lg">MediSlot AI</span>
+          <span className="font-heading font-bold text-lg">MediSlot</span>
         </Link>
 
         <div className="hidden md:flex items-center gap-1">
@@ -67,8 +71,8 @@ export function Navbar() {
               key={link.path}
               to={link.path}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${location.pathname === link.path
-                  ? "text-primary bg-primary/5"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                ? "text-primary bg-primary/5"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
             >
               {link.label}
@@ -79,11 +83,6 @@ export function Navbar() {
         <div className="hidden md:flex items-center gap-3">
           {loggedIn ? (
             <>
-              <Link to="/profile">
-                <Button variant="outline" size="sm" className="rounded-xl gap-2">
-                  <UserCircle2 className="w-4 h-4" /> Profile
-                </Button>
-              </Link>
               <Button size="sm" className="rounded-xl gap-2" onClick={logout}>
                 <LogOut className="w-4 h-4" /> Logout
               </Button>
@@ -126,8 +125,8 @@ export function Navbar() {
                   key={link.path}
                   to={link.path}
                   className={`px-4 py-3 rounded-xl text-sm font-medium transition-colors ${location.pathname === link.path
-                      ? "text-primary bg-primary/5"
-                      : "text-muted-foreground hover:bg-muted"
+                    ? "text-primary bg-primary/5"
+                    : "text-muted-foreground hover:bg-muted"
                     }`}
                 >
                   {link.label}
@@ -136,11 +135,6 @@ export function Navbar() {
               <div className="flex gap-3 pt-2">
                 {loggedIn ? (
                   <>
-                    <Link to="/profile" className="flex-1">
-                      <Button variant="outline" className="w-full rounded-xl gap-2">
-                        <UserCircle2 className="w-4 h-4" /> Profile
-                      </Button>
-                    </Link>
                     <Button className="flex-1 rounded-xl gap-2" onClick={logout}>
                       <LogOut className="w-4 h-4" /> Logout
                     </Button>

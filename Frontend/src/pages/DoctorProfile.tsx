@@ -44,6 +44,7 @@ export default function DoctorProfile() {
                 <div className="space-y-2">
                   <h1 className="font-heading font-bold text-2xl">{doc.name}</h1>
                   <p className="text-primary font-medium text-sm">{doc.specialization}</p>
+                  <p className="text-sm text-muted-foreground">{doc.hospital_or_clinic}, {doc.location}</p>
                   <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Star className="w-4 h-4 text-amber-400" fill="currentColor" />

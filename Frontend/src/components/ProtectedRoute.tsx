@@ -7,6 +7,10 @@ type ProtectedRouteProps = {
   allowedRoles?: Array<"patient" | "doctor">;
 };
 
+type DoctorDashboardOnlyGateProps = {
+  children: ReactNode;
+};
+
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   if (!isAuthenticated()) {
     return <Navigate to="/login" replace />;
@@ -17,6 +21,14 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     if (!allowedRoles.includes(currentRole)) {
       return <Navigate to={currentRole === "doctor" ? "/doctor-dashboard" : "/patient-dashboard"} replace />;
     }
+  }
+
+  return <>{children}</>;
+}
+
+export function DoctorDashboardOnlyGate({ children }: DoctorDashboardOnlyGateProps) {
+  if (isAuthenticated() && getUserRole() === "doctor") {
+    return <Navigate to="/doctor-dashboard" replace />;
   }
 
   return <>{children}</>;

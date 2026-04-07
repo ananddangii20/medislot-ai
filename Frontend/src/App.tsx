@@ -14,7 +14,7 @@ import PatientDashboard from "./pages/PatientDashboard";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import SymptomChecker from "./pages/SymptomChecker";
 import NotFound from "./pages/NotFound";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { DoctorDashboardOnlyGate, ProtectedRoute } from "@/components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -26,9 +26,30 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Splash />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/doctors" element={<Doctors />} />
-          <Route path="/doctor/:id" element={<DoctorProfile />} />
+          <Route
+            path="/home"
+            element={
+              <DoctorDashboardOnlyGate>
+                <Home />
+              </DoctorDashboardOnlyGate>
+            }
+          />
+          <Route
+            path="/doctors"
+            element={
+              <DoctorDashboardOnlyGate>
+                <Doctors />
+              </DoctorDashboardOnlyGate>
+            }
+          />
+          <Route
+            path="/doctor/:id"
+            element={
+              <DoctorDashboardOnlyGate>
+                <DoctorProfile />
+              </DoctorDashboardOnlyGate>
+            }
+          />
           <Route
             path="/booking/:id"
             element={
@@ -41,7 +62,7 @@ const App = () => (
           <Route
             path="/profile"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={["patient"]}>
                 <Profile />
               </ProtectedRoute>
             }
@@ -62,7 +83,14 @@ const App = () => (
               </ProtectedRoute>
             }
           />
-          <Route path="/symptom-checker" element={<SymptomChecker />} />
+          <Route
+            path="/symptom-checker"
+            element={
+              <DoctorDashboardOnlyGate>
+                <SymptomChecker />
+              </DoctorDashboardOnlyGate>
+            }
+          />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

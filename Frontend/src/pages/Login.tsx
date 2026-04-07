@@ -155,7 +155,7 @@ export default function Login() {
         <div className="hidden lg:flex lg:w-1/2 bg-hero-gradient items-center justify-center p-12">
           <div className="text-center space-y-6">
             <Heart className="w-10 h-10 text-white mx-auto" fill="white" />
-            <h2 className="text-3xl text-white font-bold">MediSlot AI</h2>
+            <h2 className="text-3xl text-white font-bold">MediSlot </h2>
             <p className="text-white">Your Health, Our Priority</p>
           </div>
         </div>

@@ -1,14 +1,85 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, AlertTriangle, Bot, User } from "lucide-react";
+import { Send, ShieldCheck, Bot, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
 import { PageTransition } from "@/components/PageTransition";
+import { SuggestedQuestions } from "@/components/SuggestedQuestions";
 
 interface Message {
   id: number;
   role: "user" | "ai";
   text: string;
+}
+
+const baseQuestions = [
+  "I have a headache",
+  "Fever and cough",
+  "Chest pain what to do?",
+  "Cold vs flu",
+  "Stomach pain help",
+  "Skin rash causes",
+];
+
+function buildDynamicQuestions(context: string): string[] {
+  const text = context.toLowerCase();
+
+  if (text.includes("headache") || text.includes("migraine")) {
+    return [
+      "Since when do you have headache?",
+      "Is it one side or full head pain?",
+      "Any nausea or light sensitivity?",
+      "Can I take paracetamol now?",
+      "Which doctor for migraine?",
+      "When should I go to hospital for headache?",
+    ];
+  }
+
+  if (text.includes("fever") || text.includes("cough") || text.includes("cold") || text.includes("flu")) {
+    return [
+      "How to reduce fever at home?",
+      "Do I need COVID or flu test?",
+      "Which syrup is safe for dry cough?",
+      "When is fever considered serious?",
+      "Should I visit a general physician?",
+      "How much water should I drink during fever?",
+    ];
+  }
+
+  if (text.includes("chest") || text.includes("breath") || text.includes("heart")) {
+    return [
+      "Is chest pain an emergency?",
+      "Can anxiety cause chest pain?",
+      "Should I go to ER now?",
+      "Which doctor for chest discomfort?",
+      "What warning signs should I watch?",
+      "Can gas pain feel like chest pain?",
+    ];
+  }
+
+  if (text.includes("stomach") || text.includes("acidity") || text.includes("vomit") || text.includes("nausea")) {
+    return [
+      "What to eat during stomach pain?",
+      "Home remedy for acidity?",
+      "When should I see gastroenterologist?",
+      "Can infection cause stomach cramps?",
+      "Is this food poisoning?",
+      "How long should I wait before doctor visit?",
+    ];
+  }
+
+  if (text.includes("rash") || text.includes("skin") || text.includes("itch")) {
+    return [
+      "Can this be an allergy rash?",
+      "What cream is safe for rash?",
+      "Should I avoid specific foods?",
+      "When to consult dermatologist?",
+      "Can heat cause skin rash?",
+      "How to reduce itching quickly?",
+    ];
+  }
+
+  return baseQuestions;
 }
 
 export default function SymptomChecker() {
@@ -18,22 +89,31 @@ export default function SymptomChecker() {
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const suggestedQuestions = useMemo(() => {
+    const lastUser = [...messages].reverse().find((m) => m.role === "user");
+    const fromContext = buildDynamicQuestions(lastUser?.text || input);
+    const merged = [...fromContext, ...baseQuestions];
+    return Array.from(new Set(merged)).slice(0, 8);
+  }, [messages, input]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typing]);
 
-  const send = async () => {
-    if (!input.trim()) return;
+  const send = async (prefillText?: string) => {
+    const finalText = (prefillText ?? input).trim();
+    if (!finalText) return;
 
     const userMsg: Message = {
       id: Date.now(),
       role: "user",
-      text: input.trim(),
+      text: finalText,
     };
 
     setMessages((prev) => [...prev, userMsg]);
-    const userInput = input;
+    const userInput = finalText;
     setInput("");
     setTyping(true);
 
@@ -104,19 +184,18 @@ export default function SymptomChecker() {
                         <Bot className="w-4 h-4 text-primary" />
                       </div>
                     )}
-                      <div
-                        className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
-                          msg.role === "user"
-                            ? "bg-primary text-primary-foreground rounded-br-md"
-                            : "bg-muted rounded-bl-md"
+                    <div
+                      className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.role === "user"
+                          ? "bg-primary text-primary-foreground rounded-br-md"
+                          : "bg-muted rounded-bl-md"
                         }`}
-                        dangerouslySetInnerHTML={{ 
-                          __html: (msg.text || "")
-                            .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-                            .replace(/\n\d\.\s/g, (match) => `<br /><strong>${match.trim()}</strong> `)
-                            .replace(/\n/g, "<br />")
-                        }}
-                      />
+                      dangerouslySetInnerHTML={{
+                        __html: (msg.text || "")
+                          .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                          .replace(/\n\d\.\s/g, (match) => `<br /><strong>${match.trim()}</strong> `)
+                          .replace(/\n/g, "<br />")
+                      }}
+                    />
                     {msg.role === "user" && (
                       <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
                         <User className="w-4 h-4 text-muted-foreground" />
@@ -149,14 +228,26 @@ export default function SymptomChecker() {
             </div>
 
             {/* Disclaimer */}
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 text-amber-700 text-xs mb-3">
-              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-              This is not medical advice. Please consult a doctor for proper diagnosis.
+            <div className="flex items-start gap-2 px-3 py-2 rounded-xl bg-sky-50 border border-sky-100 text-sky-700 text-xs mb-3">
+              <ShieldCheck className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+              <span>
+                Symptom Checker provides guidance only. For diagnosis and treatment, consult a qualified doctor.
+              </span>
             </div>
 
             {/* Input */}
+            <SuggestedQuestions
+              questions={suggestedQuestions}
+              onSelect={(question) => {
+                setInput(question);
+                inputRef.current?.focus();
+              }}
+              onSendNow={(question) => send(question)}
+            />
+
             <div className="flex gap-2">
               <input
+                ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && send()}

@@ -34,14 +34,14 @@ export default function Splash() {
               <Heart className="w-10 h-10 text-primary-foreground" fill="currentColor" />
             </div>
             <div className="text-center">
-              <h1 className="font-heading font-bold text-3xl">MediSlot AI</h1>
+              <h1 className="font-heading font-bold text-3xl">MediSlot </h1>
               <motion.p
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
                 className="text-muted-foreground mt-2 text-sm"
               >
-                Smart Healthcare. Simplified.
+               Healthcare booking Made Simple
               </motion.p>
             </div>
             <motion.div

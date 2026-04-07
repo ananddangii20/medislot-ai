@@ -7,19 +7,19 @@ export function Footer() {
       <div className="container py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-1">
-            <Link to="/" className="flex items-center gap-2 mb-3">
+            <Link to="/home" className="flex items-center gap-2 mb-3">
               <div className="w-8 h-8 rounded-lg bg-hero-gradient flex items-center justify-center">
                 <Heart className="w-4 h-4 text-primary-foreground" fill="currentColor" />
               </div>
-              <span className="font-heading font-bold">MediSlot AI</span>
+              <span className="font-heading font-bold">MediSlot </span>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Smart healthcare, simplified. Book appointments instantly with AI-powered assistance.
+              MediSlot  helps Indian patients discover verified doctors, request appointments, and track care updates from one reliable portal.
             </p>
           </div>
           {[
             { title: "Product", links: [["Find Doctors", "/doctors"], ["AI Checker", "/symptom-checker"], ["Book Appointment", "/doctors"]] },
-            { title: "Company", links: [["About Us", "#"], ["Careers", "#"], ["Contact", "#"]] },
+            { title: "Company", links: [["About Us", "#"], ["Careers", "#"], ["Contact", "mailto:medislot.support@gmail.com"]] },
             { title: "Legal", links: [["Privacy Policy", "#"], ["Terms of Service", "#"], ["Cookie Policy", "#"]] },
           ].map((col) => (
             <div key={col.title}>
@@ -37,7 +37,7 @@ export function Footer() {
           ))}
         </div>
         <div className="border-t border-border mt-10 pt-6 text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} MediSlot AI. All rights reserved.
+          © {new Date().getFullYear()} MediSlot. All rights reserved.
         </div>
       </div>
     </footer>

@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { motion } from "framer-motion";
 import { Calendar, Check, X, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
 import { PageTransition } from "@/components/PageTransition";
 import { toast } from "sonner";
-import { getCurrentUser, getDoctorAppointments, updateAppointmentStatus, updateDoctorConsultationFee, updateDoctorProfile } from "@/api";
+import { getCurrentUser, getDoctorAppointments, updateAppointmentStatus, updateDoctorConsultationFee, updateDoctorProfile, uploadDoctorProfileImage } from "@/api";
 
 type Status = "pending" | "accepted" | "rejected";
 
@@ -26,10 +26,13 @@ export default function DoctorDashboard() {
   const [consultationFee, setConsultationFee] = useState("1000");
   const [savingFee, setSavingFee] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [profile, setProfile] = useState({
     name: "",
     specialization: "",
     experience: "5",
+    location: "",
+    hospitalOrClinic: "",
     bio: "",
     image: "",
   });
@@ -89,6 +92,8 @@ export default function DoctorDashboard() {
           name: user?.name || "",
           specialization: user?.specialization || "General Physician",
           experience: String(user?.experience || 5),
+          location: user?.location || "Mumbai",
+          hospitalOrClinic: user?.hospital_or_clinic || "City Care Clinic",
           bio: user?.bio || "",
           image: user?.image || "",
         });
@@ -173,6 +178,16 @@ export default function DoctorDashboard() {
       return;
     }
 
+    if (!profile.location.trim()) {
+      toast.error("Please enter your location");
+      return;
+    }
+
+    if (!profile.hospitalOrClinic.trim()) {
+      toast.error("Please enter hospital or clinic name");
+      return;
+    }
+
     try {
       setSavingProfile(true);
       await updateDoctorProfile({
@@ -181,12 +196,31 @@ export default function DoctorDashboard() {
         experience: years,
         bio: profile.bio.trim(),
         image: profile.image.trim(),
+        location: profile.location.trim(),
+        hospital_or_clinic: profile.hospitalOrClinic.trim(),
       });
       toast.success("Profile updated successfully");
     } catch (error: any) {
       toast.error(error?.message || "Failed to update profile");
     } finally {
       setSavingProfile(false);
+    }
+  };
+
+  const onImageSelected = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadingImage(true);
+      const data = await uploadDoctorProfileImage(file);
+      setProfile((prev) => ({ ...prev, image: data.image || prev.image }));
+      toast.success("Profile image uploaded");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to upload image");
+    } finally {
+      setUploadingImage(false);
+      event.target.value = "";
     }
   };
 
@@ -224,6 +258,11 @@ export default function DoctorDashboard() {
 
             <div className="rounded-2xl border border-border bg-card p-4 mb-8">
               <h2 className="font-heading font-semibold text-sm mb-3">Doctor Profile</h2>
+              {profile.image && (
+                <div className="mb-3">
+                  <img src={profile.image.startsWith("/uploads") ? `http://127.0.0.1:8000${profile.image}` : profile.image} alt="Doctor" className="w-20 h-20 rounded-xl object-cover border border-border" />
+                </div>
+              )}
               <div className="grid md:grid-cols-2 gap-3 mb-3">
                 <input
                   value={profile.name}
@@ -246,10 +285,22 @@ export default function DoctorDashboard() {
                   className="w-full rounded-xl border border-border px-3 py-2 text-sm"
                 />
                 <input
-                  value={profile.image}
-                  onChange={(e) => setProfile((prev) => ({ ...prev, image: e.target.value }))}
-                  placeholder="Profile photo URL"
+                  value={profile.location}
+                  onChange={(e) => setProfile((prev) => ({ ...prev, location: e.target.value }))}
+                  placeholder="City / Location"
                   className="w-full rounded-xl border border-border px-3 py-2 text-sm"
+                />
+                <input
+                  value={profile.hospitalOrClinic}
+                  onChange={(e) => setProfile((prev) => ({ ...prev, hospitalOrClinic: e.target.value }))}
+                  placeholder="Hospital / Clinic"
+                  className="w-full rounded-xl border border-border px-3 py-2 text-sm md:col-span-2"
+                />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={onImageSelected}
+                  className="w-full rounded-xl border border-border px-3 py-2 text-sm md:col-span-2"
                 />
               </div>
               <textarea
@@ -258,7 +309,10 @@ export default function DoctorDashboard() {
                 placeholder="Write a short bio"
                 className="w-full rounded-xl border border-border px-3 py-2 text-sm min-h-24"
               />
-              <div className="mt-3">
+              <div className="mt-3 flex gap-2 items-center">
+                <p className="text-xs text-muted-foreground">
+                  {uploadingImage ? "Uploading image..." : "Select a photo file to upload."}
+                </p>
                 <Button onClick={saveDoctorProfile} disabled={savingProfile} className="rounded-xl">
                   {savingProfile ? "Saving..." : "Save Profile"}
                 </Button>

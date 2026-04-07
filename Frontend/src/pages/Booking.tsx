@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Calendar, Clock3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ const dates = Array.from({ length: 7 }, (_, i) => {
 
 export default function Booking() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { doctors } = useDoctors();
   const doc = doctors.find((d) => d.id === id);
   const [selectedDate, setSelectedDate] = useState<Date>(dates[0]);
@@ -91,9 +92,7 @@ export default function Booking() {
                       <Link to="/patient-dashboard">
                         <Button className="rounded-xl">Open Dashboard</Button>
                       </Link>
-                      <Link to="/home">
-                        <Button variant="outline" className="rounded-xl">Back Home</Button>
-                      </Link>
+                      <Button variant="outline" className="rounded-xl" onClick={() => navigate("/home")}>Back Home</Button>
                     </div>
                   </div>
                 </motion.div>
@@ -107,6 +106,7 @@ export default function Booking() {
                     <div>
                       <h3 className="font-heading font-semibold text-sm">{doc.name}</h3>
                       <p className="text-xs text-muted-foreground">{doc.specialization} · INR {doc.fee}</p>
+                      <p className="text-xs text-muted-foreground">{doc.hospital_or_clinic}, {doc.location}</p>
                     </div>
                   </div>
 
