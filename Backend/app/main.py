@@ -18,15 +18,9 @@ UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://medislott.vercel.app"
+        "https://medislott.vercel.app",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "http://localhost:8080",
-        "http://127.0.0.1:8080",
-        "http://localhost:8081",
-        "http://127.0.0.1:8081",
-        "http://localhost:8082",
-        "http://127.0.0.1:8082",
     ],
     allow_credentials=True,
     allow_methods=["*"],
