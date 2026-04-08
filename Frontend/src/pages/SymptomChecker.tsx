@@ -6,6 +6,9 @@ import { Navbar } from "@/components/Navbar";
 import { PageTransition } from "@/components/PageTransition";
 import { SuggestedQuestions } from "@/components/SuggestedQuestions";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
+
 interface Message {
   id: number;
   role: "user" | "ai";
@@ -118,7 +121,7 @@ export default function SymptomChecker() {
     setTyping(true);
 
     try {
-      const res = await fetch("http://localhost:8000/chat", {
+      const res = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
