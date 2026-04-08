@@ -7,6 +7,9 @@ import { PageTransition } from "@/components/PageTransition";
 import { toast } from "sonner";
 import { getCurrentUser, getDoctorAppointments, updateAppointmentStatus, updateDoctorConsultationFee, updateDoctorProfile, uploadDoctorProfileImage } from "@/api";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
+
 type Status = "pending" | "accepted" | "rejected";
 
 interface Appointment {
@@ -260,7 +263,15 @@ export default function DoctorDashboard() {
               <h2 className="font-heading font-semibold text-sm mb-3">Doctor Profile</h2>
               {profile.image && (
                 <div className="mb-3">
-                  <img src={profile.image.startsWith("/uploads") ? `http://127.0.0.1:8000${profile.image}` : profile.image} alt="Doctor" className="w-20 h-20 rounded-xl object-cover border border-border" />
+                  <img
+  src={
+    profile.image.startsWith("/uploads")
+      ? `${API_URL}${profile.image}`
+      : profile.image
+  }
+  alt="Doctor"
+  className="w-20 h-20 rounded-xl object-cover border border-border"
+/>
                 </div>
               )}
               <div className="grid md:grid-cols-2 gap-3 mb-3">
